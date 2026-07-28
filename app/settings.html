@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPACED — Settings</title>
+<script>
+
+(function () {
+  var t = localStorage.getItem('spaced_theme');
+  if (t === 'light') document.documentElement.classList.add('light-mode');
+})();
+(function () {
+  var m = localStorage.getItem('spaced_view_mode');
+  if (m === 'mobile') document.documentElement.classList.add('force-mobile');
+  else if (m === 'desktop') document.documentElement.classList.add('force-desktop');
+})();
+</script>
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#1A6EFF">
+<link rel="icon" href="../icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Exo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="../i18n.js"></script>
+<style>
+:root {
+  --bg: #0A0C14; --bg2: #0E1020; --panel: #1a1e2a; --border: #252b3b;
+  --accent: #1A6EFF; --accent-dark: #0050CC; --cyan: #00C8FF; --coral: #ff6b4a; --text: #eef0f5; --muted: #8892a4;
+  --glass-bg: rgba(22,26,38,0.55); --glass-nav-bg: rgba(13,15,23,0.72); --glass-border: rgba(255,255,255,.05);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; display: flex; }
+h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; }
+
+.sidebar { width: 220px; min-height: 100vh; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; }
+.sb-brand { display: flex; align-items: center; gap: 8px; padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+.sb-logo { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sb-brand span { font-family: 'Exo 2', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 0.08em; }
+.sb-nav { flex: 1; padding: 0 10px; display: flex; flex-direction: column; gap: 2px; }
+.sb-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; font-size: 14px; color: var(--muted); cursor: pointer; transition: all .15s; text-decoration: none; }
+.sb-item:hover { color: var(--text); background: rgba(26,110,255,0.05); }
+.sb-item.active { color: var(--accent); background: rgba(26,110,255,0.1); font-weight: 500; }
+.sb-item .icon { font-size: 16px; width: 18px; text-align: center; }
+.sb-bottom { padding: 12px 10px; border-top: 1px solid var(--border); }
+.sb-signout { font-size: 12px; color: var(--muted); cursor: pointer; padding: 4px 12px; }
+.sb-signout:hover { color: var(--text); }
+
+.main { margin-left: 220px; flex: 1; padding: 32px 36px; max-width: 720px; }
+.page-header { margin-bottom: 28px; }
+.page-header h1 { font-size: 26px; margin-bottom: 4px; }
+.page-header p { color: var(--muted); font-size: 14px; }
+
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+.card h2 { font-size: 16px; margin-bottom: 4px; }
+.card .card-sub { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.row:last-child { border-bottom: none; }
+.row-label { font-size: 13px; color: var(--muted); flex-shrink: 0; }
+.row-value { font-size: 13px; font-weight: 600; text-align: right; word-break: break-word; max-width: 100%; }
+.tag-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.tag { font-size: 11px; padding: 3px 9px; border-radius: 5px; background: var(--bg2); border: 1px solid var(--border); color: var(--muted); }
+
+.status-badge { font-size: 11px; padding: 3px 10px; border-radius: 5px; font-weight: 700; text-transform: uppercase; }
+.status-badge.trial { background: rgba(100,180,255,0.12); color: #64b4ff; }
+.status-badge.active { background: rgba(26,110,255,0.12); color: var(--accent); }
+.status-badge.canceled, .status-badge.past_due { background: rgba(255,107,74,0.12); color: var(--coral); }
+
+.btn { padding: 10px 18px; border-radius: 9px; font-weight: 700; font-size: 13px; cursor: pointer; border: none; transition: all .2s; }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.primary:hover { background: var(--accent-dark); }
+.btn.ghost { background: var(--bg2); color: var(--text); border: 1px solid var(--border); }
+.btn.ghost:hover { border-color: var(--accent); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+.edit-link { font-size: 12px; color: var(--accent); cursor: pointer; text-decoration: none; }
+.edit-link:hover { text-decoration: underline; }
+
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding: 20px 16px; padding-bottom: 90px; }
+  .mobile-nav { display: flex; }
+}
+
+/* Forced layout overrides (set below in Display), independent of actual screen size */
+html.force-mobile .sidebar { display: none !important; }
+html.force-mobile .main { margin-left: 0 !important; padding: 20px 16px !important; padding-bottom: 90px !important; }
+html.force-mobile .mobile-nav { display: flex !important; }
+html.force-desktop .sidebar { display: flex !important; }
+html.force-desktop .main { margin-left: 220px !important; padding: 32px 36px !important; }
+html.force-desktop .mobile-nav { display: none !important; }
+
+.mobile-nav {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg2); border-top: 1px solid var(--border);
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+  z-index: 150; justify-content: space-around;
+}
+.mn-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  text-decoration: none; color: var(--muted); font-size: 10px; padding: 4px 14px;
+  border-radius: 8px; transition: color .15s;
+}
+.mn-item.active { color: var(--accent); }
+.mn-icon { font-size: 20px; }
+
+.view-mode-row { display: flex; gap: 8px; }
+.view-mode-row .btn { padding: 7px 16px; font-size: 12px; }
+/* ─── LIGHT MODE ─────────────────────────── */
+html.light-mode {
+  --bg: #f0f2f7; --bg2: #ffffff; --panel: #ffffff; --border: #e2e5f0;
+  --text: #1a1d2e; --muted: #6b7280; --accent: #1A6EFF; --accent-dark: #0050CC;
+  --glass-bg: rgba(255,255,255,0.55); --glass-nav-bg: rgba(255,255,255,0.72); --glass-border: rgba(0,0,0,.06);
+}
+html.light-mode .card { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+/* ── Glassmorphism (Iris v2, matches index.html) ── */
+.sidebar {
+  background: var(--glass-nav-bg) !important;
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+}
+.card {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 4px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width:100%;height:100%;display:block;"><!-- top arm --><polygon points="50,4 38,38 50,50" fill="#c2e0ff"/><polygon points="50,4 50,50 62,38" fill="#2866d4"/><polygon points="50,4 38,38 43,22" fill="#e8f5ff"/><polygon points="50,4 62,38 57,22" fill="#1044a8"/><!-- right arm --><polygon points="96,50 62,38 50,50" fill="#7cbaf2"/><polygon points="96,50 50,50 62,62" fill="#1044a8"/><polygon points="96,50 62,38 78,43" fill="#aed4ff"/><polygon points="96,50 62,62 78,57" fill="#092e90"/><!-- bottom arm --><polygon points="50,96 62,62 50,50" fill="#c2e0ff"/><polygon points="50,96 50,50 38,62" fill="#2866d4"/><polygon points="50,96 62,62 57,78" fill="#e8f5ff"/><polygon points="50,96 38,62 43,78" fill="#1044a8"/><!-- left arm --><polygon points="4,50 38,62 50,50" fill="#7cbaf2"/><polygon points="4,50 50,50 38,38" fill="#1044a8"/><polygon points="4,50 38,62 22,57" fill="#aed4ff"/><polygon points="4,50 38,38 22,43" fill="#092e90"/><!-- center glow --><circle cx="50" cy="50" r="10" fill="white" opacity="0.88"/></svg></div>
+    <span>spaced</span>
+  </div>
+  <nav class="sb-nav">
+    <a href="dashboard.html" class="sb-item"><span class="icon">📅</span> <span data-i18n="sb_this_week">This Week</span></a>
+    <a href="progress.html" class="sb-item"><span class="icon">📊</span> <span data-i18n="sb_progress">Log</span></a>
+    <a href="coach.html" class="sb-item"><span class="icon">🤖</span> <span data-i18n="sb_coach">AI Coach</span></a>
+    <a href="settings.html" class="sb-item active"><span class="icon">⚙️</span> <span data-i18n="sb_settings">Settings</span></a>
+  </nav>
+  <div class="sb-bottom">
+    <div class="sb-signout" onclick="signOut()" data-i18n="sb_signout">Sign out</div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <h1 data-i18n="settings_page_title">Settings</h1>
+    <p data-i18n="settings_page_sub">Your account, training profile, and subscription</p>
+  </div>
+
+  <!-- ACCOUNT -->
+  <div class="card">
+    <h2 data-i18n="settings_account_title">Account</h2>
+    <div class="card-sub" data-i18n="settings_account_sub">Your basic account details</div>
+    <div class="row"><div class="row-label" data-i18n="settings_name_label">Name</div><div class="row-value" id="acc-name">—</div></div>
+    <div class="row"><div class="row-label" data-i18n="auth_email">Email</div><div class="row-value" id="acc-email">—</div></div>
+    <div class="row"><div class="row-label" data-i18n="settings_member_since">Member since</div><div class="row-value" id="acc-since">—</div></div>
+  </div>
+
+  <!-- TRAINING PROFILE -->
+  <div class="card">
+    <h2><span data-i18n="settings_profile_title">Training profile</span> <a class="edit-link" href="onboarding.html" style="float:right" data-i18n="settings_edit_link">Edit →</a></h2>
+    <div class="card-sub" data-i18n="settings_profile_sub">Used by the AI coach to build and adjust your plan</div>
+    <div class="row"><div class="row-label" data-i18n="settings_sport_label">Sport</div><div class="row-value" id="prof-sport">—</div></div>
+    <div class="row"><div class="row-label" data-i18n="settings_goal_label">Goal</div><div class="row-value" id="prof-goal">—</div></div>
+    <div class="row"><div class="row-label" data-i18n="settings_level_label">Level</div><div class="row-value" id="prof-level">—</div></div>
+    <div class="row"><div class="row-label" data-i18n="settings_equipment_label">Equipment</div><div class="row-value" id="prof-equipment">—</div></div>
+    <div class="row"><div class="row-label" data-i18n="settings_training_days_label">Training days</div><div class="row-value" id="prof-days">—</div></div>
+    <div class="row"><div class="row-label" data-i18n="settings_injuries_label">Injuries / limitations</div><div class="row-value tag-row" id="prof-injuries">—</div></div>
+    <div class="row"><div class="row-label" data-i18n="settings_race_date_label">Event / race date</div><div class="row-value" id="prof-race">—</div></div>
+  </div>
+
+  <!-- SUBSCRIPTION -->
+  <div class="card">
+    <h2 data-i18n="settings_subscription_title">Subscription</h2>
+    <div class="card-sub" data-i18n="settings_subscription_sub">Manage your plan and billing</div>
+    <div class="row">
+      <div class="row-label">Status</div>
+      <div class="row-value"><span class="status-badge" id="sub-status">—</span></div>
+    </div>
+    <div class="row"><div class="row-label" id="sub-detail-label">Trial ends</div><div class="row-value" id="sub-detail">—</div></div>
+    <div class="btn-row" id="sub-actions"></div>
+  </div>
+
+  <!-- DISPLAY -->
+  <div class="card">
+    <h2 data-i18n="settings_display">Display</h2>
+    <div class="card-sub" data-i18n="settings_display_sub">Choose how SPACED is laid out on this device</div>
+    <div class="row">
+      <div class="row-label" data-i18n="settings_layout">Layout</div>
+      <div class="view-mode-row" id="view-mode-row">
+        <button class="btn ghost" data-mode="auto" onclick="setViewModePref('auto')" data-i18n="settings_layout_auto">Auto</button>
+        <button class="btn ghost" data-mode="mobile" onclick="setViewModePref('mobile')" data-i18n="settings_layout_mobile">Mobile</button>
+        <button class="btn ghost" data-mode="desktop" onclick="setViewModePref('desktop')" data-i18n="settings_layout_desktop">Desktop</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- THEME -->
+  <div class="card">
+    <h2 data-i18n="settings_theme">Theme</h2>
+    <div class="card-sub" data-i18n="settings_theme_sub">Choose light or dark mode</div>
+    <div class="row">
+      <div class="row-label" data-i18n="settings_theme_label">Appearance</div>
+      <div class="view-mode-row" id="theme-mode-row">
+        <button class="btn ghost" data-theme="dark" onclick="setThemePref('dark')" data-i18n="settings_theme_dark">Dark</button>
+        <button class="btn ghost" data-theme="light" onclick="setThemePref('light')" data-i18n="settings_theme_light">Light</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LANGUAGE -->
+  <div class="card">
+    <h2 data-i18n="settings_language">Language</h2>
+    <div class="card-sub" data-i18n="settings_language_sub">Applies across SPACED</div>
+    <div class="row">
+      <div class="row-label" data-i18n="settings_language_label">Display language</div>
+      <select id="language-select" onchange="setLanguagePref(this.value)" style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px">
+        <option value="en">English</option>
+        <option value="nl">Nederlands</option>
+        <option value="de">Deutsch</option>
+        <option value="fr">Français</option>
+        <option value="es">Español</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- LEGAL -->
+  <div class="card">
+    <h2 data-i18n="settings_legal_title">Legal</h2>
+    <div class="card-sub" data-i18n="settings_legal_sub">Company info and policies</div>
+    <div class="row"><div class="row-label" data-i18n="footer_about">About us</div><div class="row-value"><a class="edit-link" href="../legal/about.html" data-i18n="settings_view_link">View →</a></div></div>
+    <div class="row"><div class="row-label" data-i18n="settings_privacy_label">Privacy Policy</div><div class="row-value"><a class="edit-link" href="../legal/privacy.html" data-i18n="settings_view_link">View →</a></div></div>
+    <div class="row"><div class="row-label" data-i18n="settings_terms_label">Terms and Conditions</div><div class="row-value"><a class="edit-link" href="../legal/terms.html" data-i18n="settings_view_link">View →</a></div></div>
+  </div>
+
+</main>
+
+<script>
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function loadSettings() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'auth.html'; return; }
+  const { data: { user } } = await sb.auth.getUser();
+
+  document.getElementById('acc-name').textContent = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Athlete';
+  document.getElementById('acc-email').textContent = user.email || '—';
+  document.getElementById('acc-since').textContent = user.created_at
+    ? new Date(user.created_at).toLocaleDateString('en', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '—';
+
+  const { data: prof } = await sb.from('athlete_profiles').select('*').eq('user_id', user.id).single();
+  if (prof) {
+    document.getElementById('prof-sport').textContent = (prof.sport || '—').replace('_', ' ');
+    document.getElementById('prof-goal').textContent = (prof.goal || '—').replace('_', ' ');
+    document.getElementById('prof-level').textContent = prof.level || '—';
+    const equipmentLabels = { full_gym: 'Full gym', home_basic: 'Home — basics', bodyweight: 'Bodyweight only', outdoor: 'Outdoor / track' };
+    document.getElementById('prof-equipment').textContent = equipmentLabels[prof.equipment] || 'Not set';
+    const days = (prof.preferred_days || []).length
+      ? prof.preferred_days.map(d => d[0].toUpperCase() + d.slice(1)).join(', ')
+      : `${prof.weekly_days || 4} days/week`;
+    document.getElementById('prof-days').textContent = days;
+    const injuries = (prof.injuries || []).filter(Boolean);
+    document.getElementById('prof-injuries').innerHTML = injuries.length
+      ? injuries.map(i => `<span class="tag">${i.replace('_', ' ')}</span>`).join('')
+      : 'None reported';
+    document.getElementById('prof-race').textContent = prof.race_date
+      ? new Date(prof.race_date).toLocaleDateString('en', { year: 'numeric', month: 'long', day: 'numeric' })
+      : 'Not set';
+  }
+
+  const { data: sub } = await sb.from('user_subscriptions').select('*').eq('user_id', user.id).single();
+  renderSubscription(prof, sub);
+}
+
+function renderSubscription(prof, sub) {
+  const statusEl = document.getElementById('sub-status');
+  const detailLabel = document.getElementById('sub-detail-label');
+  const detailEl = document.getElementById('sub-detail');
+  const actions = document.getElementById('sub-actions');
+
+  if (sub && ['active', 'past_due'].includes(sub.status)) {
+    statusEl.textContent = sub.status === 'active' ? SpacedI18n.t('sub_status_active') : SpacedI18n.t('sub_status_issue');
+    statusEl.className = `status-badge ${sub.status}`;
+    detailLabel.textContent = SpacedI18n.t('sub_renews');
+    detailEl.textContent = sub.current_period_end
+      ? new Date(sub.current_period_end).toLocaleDateString(SpacedI18n.getLang(), { year: 'numeric', month: 'long', day: 'numeric' })
+      : '—';
+    actions.innerHTML = `<button class="btn primary" onclick="openBillingPortal()" id="portal-btn">Manage billing / Cancel subscription</button>`;
+  } else if (sub && sub.status === 'canceled') {
+    statusEl.textContent = SpacedI18n.t('sub_status_canceled');
+    statusEl.className = 'status-badge canceled';
+    detailLabel.textContent = SpacedI18n.t('sub_access');
+    detailEl.textContent = sub.current_period_end
+      ? new Date(sub.current_period_end).toLocaleDateString(SpacedI18n.getLang(), { year: 'numeric', month: 'long', day: 'numeric' })
+      : '—';
+    actions.innerHTML = `<button class="btn primary" onclick="upgrade('monthly')">Resubscribe — €12.99/mo</button>`;
+  } else {
+    statusEl.textContent = SpacedI18n.t('sub_status_trial');
+    statusEl.className = 'status-badge trial';
+    detailLabel.textContent = SpacedI18n.t('sub_trial_ends');
+    const trialEnd = prof?.trial_ends_at;
+    if (trialEnd) {
+      const daysLeft = Math.ceil((new Date(trialEnd) - new Date()) / 86400000);
+      detailEl.textContent = daysLeft > 0 ? `${new Date(trialEnd).toLocaleDateString(SpacedI18n.getLang(), { month: 'long', day: 'numeric' })} (${daysLeft} days left)` : 'Trial ended';
+    } else {
+      detailEl.textContent = SpacedI18n.t('sub_trial_free');
+    }
+    actions.innerHTML = `
+      <button class="btn primary" onclick="upgrade('monthly')">${SpacedI18n.t('sub_upgrade_monthly')}</button>
+      <button class="btn ghost" onclick="upgrade('annual')">${SpacedI18n.t('sub_upgrade_annual')}</button>
+    `;
+  }
+}
+
+async function openBillingPortal() {
+  const btn = document.getElementById('portal-btn');
+  btn.disabled = true; btn.textContent = 'Opening billing portal…';
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const resp = await fetch('/.netlify/functions/create-portal-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session?.access_token },
+    });
+    const data = await resp.json();
+    if (resp.ok && data.url) {
+      window.location.href = data.url;
+    } else {
+      alert(data.error || 'Could not open billing portal. Please try again.');
+      btn.disabled = false; btn.textContent = 'Manage billing / Cancel subscription';
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Could not open billing portal. Please try again.');
+    btn.disabled = false; btn.textContent = 'Manage billing / Cancel subscription';
+  }
+}
+
+async function upgrade(billingPeriod) {
+  const priceId = billingPeriod === 'annual' ? STRIPE_YEARLY_PRICE_ID : STRIPE_MONTHLY_PRICE_ID;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const resp = await fetch('/.netlify/functions/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session?.access_token },
+      body: JSON.stringify({ priceId, billingPeriod }),
+    });
+    const data = await resp.json();
+    if (resp.ok && data.url) {
+      window.location.href = data.url;
+    } else {
+      alert(data.error || 'Could not start checkout. Please try again.');
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Could not start checkout. Please try again.');
+  }
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  window.location.href = '../index.html';
+}
+
+
+function setThemePref(theme) {
+  localStorage.setItem('spaced_theme', theme);
+  if (theme === 'light') {
+    document.documentElement.classList.add('light-mode');
+  } else {
+    document.documentElement.classList.remove('light-mode');
+  }
+  document.querySelectorAll('#theme-mode-row .btn').forEach(b => {
+    b.classList.toggle('primary', b.getAttribute('data-theme') === theme);
+    b.classList.toggle('ghost', b.getAttribute('data-theme') !== theme);
+  });
+}
+
+function initThemeButtons() {
+  const current = localStorage.getItem('spaced_theme') || 'dark';
+  document.querySelectorAll('#theme-mode-row .btn').forEach(b => {
+    b.classList.toggle('primary', b.getAttribute('data-theme') === current);
+    b.classList.toggle('ghost', b.getAttribute('data-theme') !== current);
+  });
+}
+
+function setViewModePref(mode) {
+  localStorage.setItem('spaced_view_mode', mode);
+  document.documentElement.classList.remove('force-mobile', 'force-desktop');
+  if (mode === 'mobile') document.documentElement.classList.add('force-mobile');
+  if (mode === 'desktop') document.documentElement.classList.add('force-desktop');
+  highlightViewModeBtn(mode);
+}
+
+function highlightViewModeBtn(mode) {
+  document.querySelectorAll('#view-mode-row .btn').forEach(b => {
+    const active = b.dataset.mode === mode;
+    b.classList.toggle('primary', active);
+    b.classList.toggle('ghost', !active);
+  });
+}
+
+function setLanguagePref(lang) {
+  SpacedI18n.setLang(lang);
+}
+
+highlightViewModeBtn(localStorage.getItem('spaced_view_mode') || 'auto');
+if (window.SpacedI18n) document.getElementById('language-select').value = SpacedI18n.getLang();
+
+loadSettings();
+initThemeButtons();
+</script>
+
+<nav class="mobile-nav">
+  <a class="mn-item" href="dashboard.html"><span class="mn-icon">📅</span><span data-i18n="sb_this_week">This Week</span></a>
+  <a class="mn-item" href="progress.html"><span class="mn-icon">📊</span><span data-i18n="sb_progress">Log</span></a>
+  <a class="mn-item" href="coach.html"><span class="mn-icon">🤖</span><span data-i18n="sb_coach">AI Coach</span></a>
+  <a class="mn-item active" href="settings.html"><span class="mn-icon">⚙️</span><span data-i18n="sb_settings">Settings</span></a>
+</nav>
+</body>
+</html>

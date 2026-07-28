@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPACED — Dashboard</title>
+<script>
+(function () {
+  var t = localStorage.getItem('spaced_theme');
+  if (t === 'light') document.documentElement.classList.add('light-mode');
+})();
+(function () {
+  var m = localStorage.getItem('spaced_view_mode');
+  if (m === 'mobile') document.documentElement.classList.add('force-mobile');
+  else if (m === 'desktop') document.documentElement.classList.add('force-desktop');
+})();
+</script>
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#1A6EFF">
+<link rel="icon" href="../icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Exo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="config.js"></script>
+<script src="../i18n.js"></script>
+<style>
+:root {
+  --bg: #0A0C14; --bg2: #0E1020; --panel: #1a1e2a; --border: #252b3b;
+  --accent: #1A6EFF; --accent-dark: #0050CC; --cyan: #00C8FF; --coral: #ff6b4a; --text: #eef0f5; --muted: #8892a4;
+  --glass-bg: rgba(22,26,38,0.55); --glass-nav-bg: rgba(13,15,23,0.72); --glass-border: rgba(255,255,255,.05);
+}
+
+/* ─── LIGHT MODE ─── */
+html.light-mode {
+  --bg: #f0f2f7; --bg2: #ffffff; --panel: #ffffff; --border: #e2e5f0;
+  --text: #1a1d2e; --muted: #6b7280; --accent: #1A6EFF; --accent-dark: #0050CC;
+  --glass-bg: rgba(255,255,255,0.55); --glass-nav-bg: rgba(255,255,255,0.72); --glass-border: rgba(0,0,0,.06);
+}
+html.light-mode .wc-badge.strength { background: rgba(200,80,30,0.12); }
+html.light-mode .wc-badge.cardio  { background: rgba(26,110,255,0.12); }
+html.light-mode .wc-badge.intervals { background: rgba(30,100,220,0.12); }
+html.light-mode .workout-card:hover { border-color: rgba(26,110,255,0.4); }
+html.light-mode .workout-card.completed { background: rgba(26,110,255,0.06); }
+html.light-mode .modal { background: #f8f9fc; }
+html.light-mode .exercise-item { background: #f0f2f7; }
+html.light-mode .notes-input { background: #f0f2f7; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; display: flex; }
+h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  width: 220px; min-height: 100vh; background: var(--bg2); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh;
+}
+.sb-brand { display: flex; align-items: center; gap: 8px; padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+.sb-logo { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sb-brand span { font-family: 'Exo 2', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 0.08em; }
+.sb-nav { flex: 1; padding: 0 10px; display: flex; flex-direction: column; gap: 2px; }
+.sb-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; font-size: 14px; color: var(--muted); cursor: pointer; transition: all .15s; text-decoration: none; }
+.sb-item:hover { color: var(--text); background: rgba(26,110,255,0.05); }
+.sb-item.active { color: var(--accent); background: rgba(26,110,255,0.1); font-weight: 500; }
+.sb-item .icon { font-size: 16px; width: 18px; text-align: center; }
+.sb-bottom { padding: 12px 10px; border-top: 1px solid var(--border); }
+.sb-user { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; }
+.sb-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--muted); }
+.sb-user-name { font-size: 13px; font-weight: 600; }
+.sb-user-plan { font-size: 11px; color: var(--muted); }
+.sb-signout { font-size: 12px; color: var(--muted); cursor: pointer; padding: 4px 12px; }
+.sb-signout:hover { color: var(--text); }
+
+/* ─── MAIN ─── */
+.main { margin-left: 220px; flex: 1; padding: 32px 36px; max-width: 1000px; }
+
+/* ─── PAGE HEADER ─── */
+.page-header { margin-bottom: 28px; display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.page-header h1 { font-size: 24px; }
+.race-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(26,110,255,0.08); border: 1px solid rgba(26,110,255,0.2);
+  color: var(--accent); font-size: 12px; font-weight: 600;
+  padding: 5px 12px; border-radius: 20px;
+}
+
+/* ─── TODAY HERO CARD ─── */
+.today-hero {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.today-hero.has-workout {
+  border-color: rgba(26,110,255,0.3);
+  cursor: pointer;
+}
+.today-hero.has-workout:hover {
+  border-color: rgba(26,110,255,0.5);
+}
+.today-hero::before {
+  content: '';
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: 200px;
+  background: radial-gradient(ellipse at right center, rgba(26,110,255,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.today-hero-top {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px;
+}
+.today-label {
+  font-size: 11px; font-weight: 700; color: var(--accent);
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.today-day { font-size: 13px; color: var(--muted); }
+.today-done-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(26,110,255,0.15); color: var(--accent);
+  font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+  margin-left: auto;
+}
+.today-hero-body { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.today-workout-info { flex: 1; }
+.today-type-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.today-title { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 6px; line-height: 1.2; }
+.today-meta { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+.today-exercises { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.today-exercises strong { color: var(--text); }
+.today-action { flex-shrink: 0; }
+.btn-today {
+  background: var(--accent); color: #fff; border: none;
+  padding: 12px 24px; border-radius: 10px; font-weight: 700; font-size: 14px;
+  cursor: pointer; transition: all .2s; white-space: nowrap;
+}
+.btn-today:hover { background: var(--accent-dark); transform: translateY(-1px); }
+.btn-today.ghost {
+  background: transparent; color: var(--muted); border: 1px solid var(--border);
+}
+.btn-today.ghost:hover { color: var(--text); border-color: var(--muted); transform: none; }
+
+.today-rest {
+  display: flex; align-items: center; gap: 16px;
+}
+.today-rest-icon { font-size: 32px; }
+.today-rest-text h3 { font-size: 18px; margin-bottom: 4px; }
+.today-rest-text p { font-size: 13px; color: var(--muted); }
+
+/* ─── AI COACH CARD ─── */
+.ai-coach-card {
+  background: var(--panel); border: 1px solid rgba(26,110,255,0.18);
+  border-radius: 14px; padding: 20px 24px; margin-bottom: 28px;
+}
+.ai-coach-top { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px; }
+.ai-avatar { width: 36px; height: 36px; border-radius: 9px; background: linear-gradient(135deg, #00C8FF, #1A6EFF); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; color: #fff; }
+.ai-content { flex: 1; }
+.ai-content h3 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.ai-content p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.ai-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ai-chip {
+  padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border);
+  background: var(--bg2); color: var(--muted); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all .18s; display: inline-flex; align-items: center; gap: 6px;
+}
+.ai-chip:hover { border-color: rgba(26,110,255,0.4); color: var(--text); background: rgba(26,110,255,0.05); }
+
+/* ─── WEEK SECTION ─── */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-header h2 { font-size: 16px; font-weight: 700; }
+.week-nav { display: flex; align-items: center; gap: 8px; }
+.week-nav button { background: var(--panel); border: 1px solid var(--border); color: var(--muted); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all .2s; }
+.week-nav button:hover { color: var(--text); }
+.week-nav span { font-size: 12px; font-weight: 600; color: var(--muted); min-width: 56px; text-align: center; }
+
+/* ─── WORKOUT GRID ─── */
+.workout-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 32px; }
+.workout-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 12px; cursor: pointer; transition: all .2s; position: relative; min-height: 110px;
+}
+.workout-card:hover { border-color: rgba(26,110,255,0.35); transform: translateY(-2px); }
+.workout-card.rest-day { opacity: 0.4; cursor: default; }
+.workout-card.rest-day:hover { transform: none; border-color: var(--border); }
+.workout-card.completed { border-color: rgba(26,110,255,0.3); background: rgba(26,110,255,0.04); }
+.workout-card.today-card {
+  border-color: var(--accent);
+  background: rgba(26,110,255,0.05);
+  box-shadow: 0 0 0 1px rgba(26,110,255,0.15), 0 4px 20px rgba(26,110,255,0.08);
+}
+.workout-card.today-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.wc-day { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.today-chip-small {
+  display: inline-block; font-size: 9px; font-weight: 700; color: #fff;
+  background: var(--accent); padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; color: #fff;
+}
+.wc-badge { display: inline-block; font-size: 9px; padding: 2px 7px; border-radius: 4px; font-weight: 700; margin-bottom: 8px; }
+.wc-badge.strength { background: rgba(255,107,74,0.15); color: var(--coral); }
+.wc-badge.cardio { background: rgba(26,110,255,0.15); color: var(--accent); }
+.wc-badge.intervals { background: rgba(100,180,255,0.15); color: #64b4ff; }
+.wc-badge.race_sim { background: rgba(26,110,255,0.12); color: var(--accent); }
+.wc-badge.recovery { background: rgba(255,255,255,0.05); color: var(--muted); }
+.wc-badge.technique { background: rgba(124,58,237,0.15); color: #a78bfa; }
+.wc-badge.rest { background: rgba(255,255,255,0.05); color: var(--muted); }
+.wc-title { font-size: 11px; font-weight: 700; margin-bottom: 4px; line-height: 1.3; }
+.wc-meta { font-size: 10px; color: var(--muted); }
+.wc-done-icon { position: absolute; top: 10px; right: 10px; width: 18px; height: 18px; border-radius: 5px; background: var(--accent); color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+/* ─── WORKOUT MODAL ─── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto; }
+
+/* View 1: workout details */
+.modal-view { padding: 0; }
+.modal-header { padding: 24px 24px 0; display: flex; justify-content: space-between; align-items: flex-start; }
+.modal-header h2 { font-size: 20px; line-height: 1.2; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; flex-shrink: 0; margin-left: 12px; }
+.modal-body { padding: 18px 24px 24px; }
+.modal-meta { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.modal-badge { font-size: 12px; padding: 4px 10px; border-radius: 5px; font-weight: 600; }
+.exercise-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+.exercise-item { background: var(--bg2); border-radius: 9px; padding: 12px 16px; display: flex; align-items: center; gap: 14px; }
+.ex-num { width: 24px; height: 24px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
+.ex-info { flex: 1; }
+.ex-name { font-size: 14px; font-weight: 600; }
+.ex-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.ex-sets { font-size: 12px; color: var(--accent); font-weight: 700; }
+.modal-actions { display: flex; gap: 10px; }
+.btn { padding: 12px 22px; border-radius: 9px; font-weight: 700; font-size: 13px; cursor: pointer; border: none; transition: all .2s; }
+.btn.primary { background: var(--accent); color: #fff; flex: 1; }
+.btn.primary:hover { background: var(--accent-dark); }
+.btn.ghost { background: var(--bg2); color: var(--muted); border: 1px solid var(--border); }
+.btn.ghost:hover { color: var(--text); }
+
+/* View 2: coach RPE feedback */
+.coach-feedback-view { padding: 28px 24px 24px; display: none; }
+.coach-fb-header { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 24px; }
+.coach-fb-avatar { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #00C8FF, #1A6EFF); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff; flex-shrink: 0; }
+.coach-fb-text h3 { font-size: 16px; margin-bottom: 4px; }
+.coach-fb-text p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.rpe-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+.rpe-btn {
+  padding: 14px 8px; border-radius: 12px; border: 1px solid var(--border);
+  background: var(--bg2); cursor: pointer; transition: all .2s; text-align: center;
+}
+.rpe-btn:hover { border-color: rgba(26,110,255,0.4); }
+.rpe-btn.selected { border-color: var(--accent); background: rgba(26,110,255,0.1); }
+.rpe-emoji { font-size: 22px; display: block; margin-bottom: 4px; }
+.rpe-label { font-size: 11px; font-weight: 700; color: var(--text); display: block; }
+.rpe-range { font-size: 10px; color: var(--muted); display: block; margin-top: 1px; }
+.notes-input { width: 100%; background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: 8px; font-size: 13px; resize: none; height: 70px; font-family: 'Space Grotesk', sans-serif; }
+.notes-input:focus { outline: none; border-color: var(--accent); }
+.notes-label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; margin-top: 16px; }
+
+/* ─── AI QUICK INPUT (dashboard coach card) ─── */
+.ai-quick-input-row { display: flex; gap: 8px; margin-top: 12px; }
+.ai-quick-input { flex: 1; background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 9px 14px; border-radius: 9px; font-size: 13px; font-family: 'Space Grotesk', sans-serif; transition: border-color .2s; }
+.ai-quick-input:focus { outline: none; border-color: var(--accent); }
+.ai-quick-input::placeholder { color: var(--muted); }
+.ai-quick-send { background: var(--accent); border: none; color: #fff; width: 36px; border-radius: 9px; font-size: 16px; cursor: pointer; flex-shrink: 0; transition: background .2s; }
+.ai-quick-send:hover { background: var(--accent-dark); }
+
+/* ─── MINI CHAT (post-workout modal) ─── */
+.mini-chat { margin-top: 16px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: none; }
+.mini-chat-messages { padding: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; background: var(--bg2); }
+.mc-bubble { padding: 9px 13px; border-radius: 9px; font-size: 13px; line-height: 1.55; }
+.mc-bubble.coach { background: var(--panel); border: 1px solid var(--border); color: var(--text); }
+.mc-bubble.user { background: rgba(26,110,255,0.1); border: 1px solid rgba(26,110,255,0.2); color: var(--text); align-self: flex-end; max-width: 85%; }
+.mc-typing { display: flex; align-items: center; gap: 4px; padding: 9px 13px; }
+.mc-typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: typing 1.2s infinite; }
+.mc-typing-dot:nth-child(2) { animation-delay: .2s; }
+.mc-typing-dot:nth-child(3) { animation-delay: .4s; }
+.mini-chat-input-row { display: flex; border-top: 1px solid var(--border); }
+.mini-chat-input { flex: 1; background: transparent; border: none; padding: 10px 14px; font-size: 13px; color: var(--text); font-family: 'Space Grotesk', sans-serif; }
+.mini-chat-input::placeholder { color: var(--muted); }
+.mini-chat-input:focus { outline: none; }
+.mini-chat-send-btn { background: var(--accent); border: none; color: #fff; padding: 10px 18px; font-weight: 700; font-size: 14px; cursor: pointer; transition: background .2s; }
+.mini-chat-send-btn:hover { background: var(--accent-dark); }
+.mini-chat-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 900px) {
+  .workout-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding: 20px; padding-bottom: 90px; }
+  .workout-grid { grid-template-columns: repeat(2, 1fr); }
+  .today-hero-body { flex-direction: column; }
+  .rpe-grid { grid-template-columns: repeat(2, 1fr); }
+  .page-header { flex-direction: column; align-items: flex-start; }
+  .mobile-nav { display: flex; }
+}
+
+html.force-mobile .sidebar { display: none !important; }
+html.force-mobile .main { margin-left: 0 !important; padding: 20px !important; padding-bottom: 90px !important; }
+html.force-mobile .workout-grid { grid-template-columns: repeat(2, 1fr) !important; }
+html.force-mobile .mobile-nav { display: flex !important; }
+html.force-desktop .sidebar { display: flex !important; }
+html.force-desktop .main { margin-left: 220px !important; padding: 32px 36px !important; }
+html.force-desktop .workout-grid { grid-template-columns: repeat(7, 1fr) !important; }
+html.force-desktop .mobile-nav { display: none !important; }
+
+.mobile-nav {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg2); border-top: 1px solid var(--border);
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+  z-index: 150; justify-content: space-around;
+}
+.mn-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  text-decoration: none; color: var(--muted); font-size: 10px; padding: 4px 14px;
+  border-radius: 8px; transition: color .15s;
+}
+.mn-item.active { color: var(--accent); }
+.mn-icon { font-size: 20px; }
+
+/* ── Glassmorphism (Iris v2, matches index.html) ── */
+.sidebar {
+  background: var(--glass-nav-bg) !important;
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+}
+.today-hero, .ai-coach-card, .modal {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 4px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+}
+/* No !important: .workout-card.completed / .today-card set their own accent-tinted
+   background and must keep winning by specificity over this base rule. */
+.workout-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: var(--glass-border);
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width:100%;height:100%;display:block;"><!-- top arm --><polygon points="50,4 38,38 50,50" fill="#c2e0ff"/><polygon points="50,4 50,50 62,38" fill="#2866d4"/><polygon points="50,4 38,38 43,22" fill="#e8f5ff"/><polygon points="50,4 62,38 57,22" fill="#1044a8"/><!-- right arm --><polygon points="96,50 62,38 50,50" fill="#7cbaf2"/><polygon points="96,50 50,50 62,62" fill="#1044a8"/><polygon points="96,50 62,38 78,43" fill="#aed4ff"/><polygon points="96,50 62,62 78,57" fill="#092e90"/><!-- bottom arm --><polygon points="50,96 62,62 50,50" fill="#c2e0ff"/><polygon points="50,96 50,50 38,62" fill="#2866d4"/><polygon points="50,96 62,62 57,78" fill="#e8f5ff"/><polygon points="50,96 38,62 43,78" fill="#1044a8"/><!-- left arm --><polygon points="4,50 38,62 50,50" fill="#7cbaf2"/><polygon points="4,50 50,50 38,38" fill="#1044a8"/><polygon points="4,50 38,62 22,57" fill="#aed4ff"/><polygon points="4,50 38,38 22,43" fill="#092e90"/><!-- center glow --><circle cx="50" cy="50" r="10" fill="white" opacity="0.88"/></svg></div>
+    <span>spaced</span>
+  </div>
+  <nav class="sb-nav">
+    <a class="sb-item active" href="dashboard.html"><span class="icon">📅</span> <span data-i18n="sb_this_week">This Week</span></a>
+    <a class="sb-item" href="progress.html"><span class="icon">📊</span> <span data-i18n="sb_progress">Log</span></a>
+    <a class="sb-item" href="coach.html"><span class="icon">🤖</span> <span data-i18n="sb_coach">AI Coach</span></a>
+    <a class="sb-item" href="settings.html"><span class="icon">⚙️</span> <span data-i18n="sb_settings">Settings</span></a>
+  </nav>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <div class="sb-avatar" id="user-avatar">?</div>
+      <div>
+        <div class="sb-user-name" id="user-name">Loading…</div>
+        <div class="sb-user-plan" id="user-plan">Pro</div>
+      </div>
+    </div>
+    <div class="sb-signout" onclick="signOut()" data-i18n="sb_signout">Sign out</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <h1 id="greeting">Good morning ✦</h1>
+    <div class="race-pill" id="race-countdown" style="display:none"><span id="race-days-text">—</span></div>
+  </div>
+
+  <!-- TODAY HERO -->
+  <div class="today-hero" id="today-hero">
+    <div style="text-align:center;padding:20px;color:var(--muted)">Loading…</div>
+  </div>
+
+  <!-- AI COACH -->
+  <div class="ai-coach-card">
+    <div class="ai-coach-top">
+      <div class="ai-avatar">✦</div>
+      <div class="ai-content">
+        <h3 data-i18n="ai_coach_title">Your AI Coach</h3>
+        <p id="ai-daily-msg" data-i18n="ai_coach_loading">Loading today's coaching insight…</p>
+      </div>
+    </div>
+    <div class="ai-chips">
+      <div class="ai-chip" onclick="sendToCoach('I am sick today, can you adjust my schedule?')">I'm sick</div>
+      <div class="ai-chip" onclick="sendToCoach('I have no time to train today, what should I do?')">No time today</div>
+      <div class="ai-chip" onclick="sendToCoach('My knee is hurting, can we adapt the training?')">Knee hurts</div>
+      <div class="ai-chip" onclick="sendToCoach('I feel strong this week, can we make the training harder?')">Make it harder</div>
+    </div>
+    <div class="ai-quick-input-row">
+      <input type="text" class="ai-quick-input" id="ai-quick-input" placeholder="Ask your coach anything…" onkeydown="if(event.key==='Enter'&&this.value.trim()){sendToCoach(this.value.trim())}">
+      <button class="ai-quick-send" onclick="var v=document.getElementById('ai-quick-input').value.trim();if(v)sendToCoach(v)">→</button>
+    </div>
+  </div>
+
+  <!-- THIS WEEK -->
+  <div class="section-header">
+    <h2 id="week-title" data-i18n="week_title_current">This Week</h2>
+    <div class="week-nav">
+      <button onclick="changeWeek(-1)" title="Previous week">←</button>
+      <span id="week-range" data-i18n="week_range_this_week">This week</span>
+      <button onclick="changeWeek(1)" id="week-next-btn" title="Next week">→</button>
+    </div>
+  </div>
+
+  <div class="workout-grid" id="workout-grid">
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
+      <div style="font-size:24px;margin-bottom:10px">✦</div>
+      <span data-i18n="loading_plan">Loading your training plan…</span>
+    </div>
+  </div>
+
+</main>
+
+<!-- WORKOUT MODAL -->
+<div class="modal-overlay" id="workout-modal">
+  <div class="modal">
+
+    <!-- View 1: Workout details -->
+    <div id="modal-details-view">
+      <div class="modal-header">
+        <h2 id="modal-title" data-i18n="modal_default_title">Workout</h2>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-meta" id="modal-meta"></div>
+        <div class="exercise-list" id="exercise-list"></div>
+        <div class="modal-actions">
+          <button class="btn ghost" onclick="closeModal()" data-i18n="modal_close_btn">Close</button>
+          <button class="btn primary" id="complete-btn" onclick="showCoachFeedback()" data-i18n="modal_mark_done_btn">✓ I've completed this</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- View 2: Coach RPE feedback -->
+    <div class="coach-feedback-view" id="coach-feedback-view">
+      <div class="coach-fb-header">
+        <div class="coach-fb-avatar">✦</div>
+        <div class="coach-fb-text">
+          <h3 id="fb-title">Nice work!</h3>
+          <p id="fb-subtitle">How hard was today's session? This helps me adapt next week.</p>
+        </div>
+      </div>
+
+      <div class="rpe-grid">
+        <div class="rpe-btn" data-rpe-min="1" data-rpe-max="3" data-rpe-val="2" onclick="selectRPE(this)">
+          <span class="rpe-emoji">😎</span>
+          <span class="rpe-label">Easy</span>
+          <span class="rpe-range">1 – 3</span>
+        </div>
+        <div class="rpe-btn" data-rpe-min="4" data-rpe-max="6" data-rpe-val="5" onclick="selectRPE(this)">
+          <span class="rpe-emoji">😤</span>
+          <span class="rpe-label">Moderate</span>
+          <span class="rpe-range">4 – 6</span>
+        </div>
+        <div class="rpe-btn" data-rpe-min="7" data-rpe-max="8" data-rpe-val="8" onclick="selectRPE(this)">
+          <span class="rpe-emoji">🔥</span>
+          <span class="rpe-label">Hard</span>
+          <span class="rpe-range">7 – 8</span>
+        </div>
+        <div class="rpe-btn" data-rpe-min="9" data-rpe-max="10" data-rpe-val="10" onclick="selectRPE(this)">
+          <span class="rpe-emoji">💀</span>
+          <span class="rpe-label">Max effort</span>
+          <span class="rpe-range">9 – 10</span>
+        </div>
+      </div>
+
+      <!-- Mini-chat with AI coach (appears after RPE is selected) -->
+      <div class="mini-chat" id="mini-chat">
+        <div class="mini-chat-messages" id="mini-chat-messages"></div>
+        <div class="mini-chat-input-row">
+          <input type="text" class="mini-chat-input" id="mini-chat-input" placeholder="Reply to your coach…" onkeydown="if(event.key==='Enter')sendMiniChat()">
+          <button class="mini-chat-send-btn" id="mini-chat-send-btn" onclick="sendMiniChat()">→</button>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn ghost" onclick="closeModal()">Skip</button>
+        <button class="btn primary" id="log-btn" onclick="markComplete()" disabled>Log training →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let profile = null;
+let currentPlan = null;
+let selectedEffort = null;
+let activeWorkout = null;
+let currentUserId = null;
+let weekOffset = 0;
+let renderedWorkouts = [];
+let miniChatHistory = [];
+let miniChatNotes = '';
+let miniChatActive = false;
+
+const DAY_KEYS = ['day_sun','day_mon','day_tue','day_wed','day_thu','day_fri','day_sat'];
+function dayLabel(dayOfWeek) { return SpacedI18n.t(DAY_KEYS[dayOfWeek]); }
+const TODAY = new Date().getDay();
+
+function typeLabel(type) {
+  const key = 'type_' + (type || '').replace(/-/g, '_');
+  const label = SpacedI18n.t(key);
+  return label === key ? (type || '').replace('_', ' ') : label;
+}
+
+function toLocalDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// ─── FALLBACK PLAN ───────────────────────────────────────────────
+function getFallbackPlan(sport, level, days) {
+  const plans = {
+    hyrox: [
+      { type: 'strength', title: 'Upper Body + Core', duration: 55, exercises: [
+        { name: 'Pull-ups', sets: '4×8', detail: '90s rest' },
+        { name: 'Dumbbell Row', sets: '3×12 each', detail: '60s rest' },
+        { name: 'Push-up Variants', sets: '4×15', detail: '60s rest' },
+        { name: 'Plank Hold', sets: '3×45s', detail: '45s rest' },
+        { name: 'Farmers Carry', sets: '4×30m', detail: 'Heavy' },
+      ]},
+      { type: 'intervals', title: '10×400m Intervals', duration: 45, exercises: [
+        { name: 'Warm-up jog', sets: '1.5km', detail: 'Zone 1–2, easy pace' },
+        { name: '400m repeats', sets: '10×400m', detail: '~1:40/400m, 90s jog rest' },
+        { name: 'Cool-down jog', sets: '1km', detail: 'Zone 1, easy' },
+      ]},
+      { type: 'strength', title: 'Lower Body Power', duration: 60, exercises: [
+        { name: 'Back Squat', sets: '4×6', detail: '85% 1RM' },
+        { name: 'Romanian Deadlift', sets: '3×10', detail: 'Controlled eccentric' },
+        { name: 'Sled Push', sets: '6×20m', detail: '120kg, 2 min rest' },
+        { name: 'Sandbag Lunges', sets: '3×16', detail: '20kg' },
+        { name: 'Wall Ball', sets: '4×20', detail: '9/6kg' },
+      ]},
+      { type: 'race_sim', title: 'Mini Hyrox Simulation', duration: 75, exercises: [
+        { name: 'Ski Erg', sets: '1000m', detail: 'Target: under 4:30' },
+        { name: 'Run', sets: '1km', detail: '~5:00/km' },
+        { name: 'Sled Push', sets: '50m', detail: '102/152kg' },
+        { name: 'Burpee Broad Jumps', sets: '80m', detail: 'Steady rhythm' },
+        { name: 'Run', sets: '1km', detail: '~4:45/km, finish strong' },
+      ]},
+    ],
+    running: [
+      { type: 'intervals', title: 'Speed Intervals', duration: 45, exercises: [
+        { name: 'Warm-up jog', sets: '2km', detail: 'Zone 1–2 + drills' },
+        { name: '1km repeats', sets: '5×1km', detail: '5K target pace, 2 min jog rest' },
+        { name: 'Cool-down jog', sets: '2km', detail: 'Zone 1' },
+      ]},
+      { type: 'cardio', title: 'Easy Long Run', duration: 75, exercises: [
+        { name: 'Long run', sets: '12–16km', detail: 'Zone 2, 135–150bpm, conversational' },
+      ]},
+      { type: 'intervals', title: 'Tempo Run', duration: 50, exercises: [
+        { name: 'Warm-up jog', sets: '2km', detail: 'Zone 1–2' },
+        { name: 'Tempo blocks', sets: '3×4km', detail: 'Threshold pace, 3 min easy between' },
+        { name: 'Cool-down jog', sets: '2km', detail: 'Zone 1' },
+      ]},
+      { type: 'strength', title: 'Running Strength', duration: 40, exercises: [
+        { name: 'Single-leg Squat', sets: '3×10 each', detail: 'Controlled' },
+        { name: 'Hip Thrust', sets: '3×15', detail: 'Heavy' },
+        { name: 'Calf Raises', sets: '4×20', detail: 'Slow eccentric' },
+        { name: 'Core Circuit', sets: '3 rounds', detail: 'Plank, dead bug, side plank' },
+      ]},
+    ],
+  };
+  return (plans[sport] || plans['hyrox']).slice(0, days);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'auth.html'; return; }
+
+  const { data: { user } } = await sb.auth.getUser();
+  const { data: prof } = await sb.from('athlete_profiles').select('*').eq('user_id', user.id).single();
+  profile = prof;
+
+  const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Athlete';
+  document.getElementById('user-name').textContent = name;
+  document.getElementById('user-avatar').textContent = name[0].toUpperCase();
+
+  const { data: sub } = await sb.from('user_subscriptions').select('status').eq('user_id', user.id).single();
+  document.getElementById('user-plan').textContent = sub?.status === 'active' ? 'Pro' : SpacedI18n.t('sub_status_trial');
+
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? SpacedI18n.t('greeting_morning') : hour < 17 ? SpacedI18n.t('greeting_afternoon') : SpacedI18n.t('greeting_evening');
+  document.getElementById('greeting').textContent = greet + ', ' + name.split(' ')[0] + ' ✦';
+
+  if (prof?.race_date) {
+    const days = Math.ceil((new Date(prof.race_date) - new Date()) / 86400000);
+    if (days >= 0) {
+      const pill = document.getElementById('race-countdown');
+      const sport = (prof.sport || 'race').replace('_', ' ');
+      document.getElementById('race-days-text').textContent = days > 0
+        ? SpacedI18n.tf('race_countdown_sport_template', { days, sport })
+        : SpacedI18n.t('race_countdown_raceday');
+      pill.style.display = 'inline-flex';
+    }
+  }
+
+  currentUserId = user.id;
+  await loadWeek(0);
+}
+
+// ─── WEEK LOADING ────────────────────────────────────────────────
+async function loadWeek(offset) {
+  weekOffset = Math.min(offset, 0);
+  const prof = profile;
+  const weekStart = getWeekStart(weekOffset);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
+
+  document.getElementById('week-range').textContent = weekOffset === 0
+    ? SpacedI18n.t('week_range_this_week')
+    : `${weekStart.toLocaleDateString(SpacedI18n.getLang(), { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString(SpacedI18n.getLang(), { month: 'short', day: 'numeric' })}`;
+  document.getElementById('week-title').textContent = weekOffset === 0 ? SpacedI18n.t('week_title_current') : SpacedI18n.t('week_title_history');
+  document.getElementById('week-next-btn').disabled = weekOffset >= 0;
+
+  const { data: workouts } = await sb.from('workouts')
+    .select('*')
+    .eq('user_id', currentUserId)
+    .gte('scheduled_date', toLocalDateStr(weekStart))
+    .lte('scheduled_date', toLocalDateStr(weekEnd))
+    .order('scheduled_date');
+
+  let weekWorkouts = workouts;
+
+  if (weekOffset === 0 && (!weekWorkouts || weekWorkouts.length === 0)) {
+    const storedPlan = localStorage.getItem('spaced_plan');
+    if (storedPlan) {
+      try {
+        const plan = JSON.parse(storedPlan);
+        weekWorkouts = plan.workouts || [];
+        for (const w of weekWorkouts) {
+          await sb.from('workouts').insert({ ...w, user_id: currentUserId, completed: false });
+        }
+      } catch(e) {}
+      localStorage.removeItem('spaced_plan');
+    }
+    if ((!weekWorkouts || weekWorkouts.length === 0) && prof?.onboarded) {
+      weekWorkouts = await generateAndSaveWeek(prof, weekStart);
+    }
+    if (!weekWorkouts || weekWorkouts.length === 0) {
+      weekWorkouts = generateFallbackWeek(prof, weekStart);
+    }
+  }
+
+  // Attach logs
+  const completedIds = (weekWorkouts || [])
+    .filter(w => w.completed && !String(w.id).startsWith('local-'))
+    .map(w => w.id);
+  if (completedIds.length > 0 && currentUserId) {
+    const { data: logs } = await sb.from('workout_logs')
+      .select('workout_id, perceived_effort, notes')
+      .in('workout_id', completedIds)
+      .eq('user_id', currentUserId)
+      .order('logged_at', { ascending: false });
+    if (logs) {
+      const logMap = {};
+      logs.forEach(l => { if (!logMap[l.workout_id]) logMap[l.workout_id] = l; });
+      weekWorkouts = (weekWorkouts || []).map(w => ({ ...w, _log: logMap[w.id] || null }));
+    }
+  }
+
+  currentPlan = weekWorkouts || [];
+  renderTodayHero(currentPlan, weekStart);
+  renderWorkouts(currentPlan, prof, weekStart);
+  if (weekOffset === 0) renderCoachMessage(prof);
+}
+
+function changeWeek(delta) { loadWeek(weekOffset + delta); }
+
+// ─── TODAY HERO ──────────────────────────────────────────────────
+function renderTodayHero(workouts, weekStart) {
+  const hero = document.getElementById('today-hero');
+  const todayStr = toLocalDateStr(new Date());
+  const todayWorkout = workouts.find(w => w.scheduled_date === todayStr);
+  const todayDate = new Date();
+  const todayName = dayLabel(todayDate.getDay());
+  const todayLabelText = SpacedI18n.t('today_label');
+
+  if (!todayWorkout) {
+    // Rest day or no plan for today
+    hero.classList.remove('has-workout');
+    hero.innerHTML = `
+      <div class="today-hero-top">
+        <span class="today-label">${todayLabelText}</span>
+        <span class="today-day">${todayName}</span>
+      </div>
+      <div class="today-rest">
+        <div class="today-rest-icon">🌿</div>
+        <div class="today-rest-text">
+          <h3>${SpacedI18n.t('rest_title')}</h3>
+          <p>${SpacedI18n.t('rest_meta')}</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const isDone = todayWorkout.completed && !!(todayWorkout._log?.perceived_effort);
+  const exercises = Array.isArray(todayWorkout.exercises_json)
+    ? todayWorkout.exercises_json
+    : JSON.parse(todayWorkout.exercises_json || '[]');
+
+  const previewExercises = exercises.slice(0, 3).map(e => e.name).join(' · ');
+
+  hero.classList.add('has-workout');
+  hero.onclick = () => openWorkout(todayWorkout);
+
+  hero.innerHTML = `
+    <div class="today-hero-top">
+      <span class="today-label">${todayLabelText}</span>
+      <span class="today-day">${todayName}</span>
+      ${isDone ? '<span class="today-done-chip">✓ Done</span>' : ''}
+    </div>
+    <div class="today-hero-body">
+      <div class="today-workout-info">
+        <div class="today-type-row">
+          <span class="wc-badge ${todayWorkout.type}">${typeLabel(todayWorkout.type)}</span>
+          <span style="font-size:12px;color:var(--muted)">⏱ ${todayWorkout.duration_minutes} min</span>
+        </div>
+        <div class="today-title">${escapeHtml(todayWorkout.title)}</div>
+        ${exercises.length > 0 ? `<div class="today-exercises"><strong>${exercises.length} exercises</strong> · ${escapeHtml(previewExercises)}${exercises.length > 3 ? ' …' : ''}</div>` : ''}
+      </div>
+      <div class="today-action">
+        ${isDone
+          ? `<button class="btn-today ghost" onclick="event.stopPropagation();openWorkout(renderedWorkouts.find(w=>w.scheduled_date==='${todayStr}'))">${SpacedI18n.t('view_details_btn')}</button>`
+          : `<button class="btn-today">${SpacedI18n.t('start_training_btn')}</button>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+// ─── WEEK GRID ───────────────────────────────────────────────────
+function renderWorkouts(workouts, prof, weekStart) {
+  const grid = document.getElementById('workout-grid');
+  weekStart = weekStart || getWeekStart();
+
+  if (!workouts.length) {
+    const emptyState = weekOffset === 0
+      ? SpacedI18n.t('empty_no_workouts_html')
+      : SpacedI18n.t('empty_no_history');
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">${emptyState}</div>`;
+    return;
+  }
+
+  const visibleDays = [1, 2, 3, 4, 5, 6, 0]; // Mon–Sun
+  let html = '';
+  renderedWorkouts = [];
+
+  for (let i = 0; i < 7; i++) {
+    const dayOfWeek = visibleDays[i];
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    const dateStr = toLocalDateStr(d);
+    const w = workouts.find(w => w.scheduled_date === dateStr);
+    const isToday = toLocalDateStr(new Date()) === dateStr;
+
+    if (!w) {
+      html += `<div class="workout-card rest-day${isToday ? ' today-card' : ''}">
+        ${isToday ? `<div class="today-chip-small">${SpacedI18n.t('today_label')}</div>` : ''}
+        <div class="wc-day">${dayLabel(dayOfWeek)}</div>
+        <span class="wc-badge rest">${SpacedI18n.t('rest_badge')}</span>
+        <div class="wc-title">${SpacedI18n.t('rest_title')}</div>
+      </div>`;
+      continue;
+    }
+
+    const isDone = w.completed && !!(w._log?.perceived_effort);
+    const idx = renderedWorkouts.length;
+    renderedWorkouts.push(w);
+
+    html += `<div class="workout-card${isDone ? ' completed' : ''}${isToday ? ' today-card' : ''}" onclick="openWorkoutAt(${idx})">
+      ${isToday ? `<div class="today-chip-small">${SpacedI18n.t('today_label')}</div>` : ''}
+      <div class="wc-day">${dayLabel(dayOfWeek)}</div>
+      <span class="wc-badge ${w.type}">${typeLabel(w.type)}</span>
+      ${isDone ? '<div class="wc-done-icon">✓</div>' : ''}
+      <div class="wc-title">${escapeHtml(w.title)}</div>
+      <div class="wc-meta">⏱ ${w.duration_minutes} min</div>
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+// ─── COACH MESSAGE ───────────────────────────────────────────────
+const COACH_MSG_KEYS = ['coach_msg_1', 'coach_msg_2', 'coach_msg_3', 'coach_msg_4', 'coach_msg_5'];
+
+function renderCoachMessage(prof) {
+  const idx = new Date().getDate() % COACH_MSG_KEYS.length;
+  document.getElementById('ai-daily-msg').textContent = SpacedI18n.t(COACH_MSG_KEYS[idx]);
+}
+
+function sendToCoach(msg) {
+  localStorage.setItem('spaced_coach_prefill', msg);
+  window.location.href = 'coach.html';
+}
+
+// ─── MODAL: DETAILS VIEW ─────────────────────────────────────────
+function openWorkoutAt(idx) {
+  const w = renderedWorkouts[idx];
+  if (w) openWorkout(w);
+}
+
+function openWorkout(w) {
+  activeWorkout = w;
+  selectedEffort = null;
+
+  // Reset modal to details view
+  document.getElementById('modal-details-view').style.display = 'block';
+  document.getElementById('coach-feedback-view').style.display = 'none';
+
+  document.getElementById('modal-title').textContent = w.title;
+
+  const exercises = Array.isArray(w.exercises_json) ? w.exercises_json : JSON.parse(w.exercises_json || '[]');
+  document.getElementById('modal-meta').innerHTML = `
+    <span class="modal-badge wc-badge ${w.type}">${typeLabel(w.type)}</span>
+    <span class="modal-badge" style="background:var(--bg2);color:var(--muted);border:1px solid var(--border)">⏱ ${w.duration_minutes} min</span>
+  `;
+
+  document.getElementById('exercise-list').innerHTML = exercises.map((ex, i) => `
+    <div class="exercise-item">
+      <div class="ex-num">${i + 1}</div>
+      <div class="ex-info">
+        <div class="ex-name">${ex.name}</div>
+        <div class="ex-detail">${ex.detail || ''}</div>
+      </div>
+      <div class="ex-sets">${ex.sets}</div>
+    </div>
+  `).join('');
+
+  const completeBtn = document.getElementById('complete-btn');
+  if (w.completed) {
+    completeBtn.textContent = '✓ Completed';
+    completeBtn.disabled = true;
+    completeBtn.style.opacity = '0.6';
+  } else {
+    completeBtn.textContent = '✓ I\'ve completed this';
+    completeBtn.disabled = false;
+    completeBtn.style.opacity = '1';
+  }
+
+  document.getElementById('workout-modal').classList.add('open');
+}
+
+// ─── MODAL: COACH FEEDBACK VIEW ──────────────────────────────────
+function showCoachFeedback() {
+  if (!activeWorkout || activeWorkout.completed) return;
+
+  document.getElementById('modal-details-view').style.display = 'none';
+  document.getElementById('coach-feedback-view').style.display = 'block';
+
+  document.getElementById('fb-title').textContent = `Nice work on "${activeWorkout.title}"!`;
+  document.getElementById('fb-subtitle').textContent = 'How hard was today\'s session? Select your effort level to chat with your coach.';
+
+  // Reset RPE selection
+  document.querySelectorAll('.rpe-btn').forEach(b => b.classList.remove('selected'));
+  selectedEffort = null;
+  document.getElementById('log-btn').disabled = true;
+
+  // Reset mini-chat
+  miniChatHistory = [];
+  miniChatNotes = '';
+  miniChatActive = false;
+  document.getElementById('mini-chat').style.display = 'none';
+  document.getElementById('mini-chat-messages').innerHTML = '';
+  const inp = document.getElementById('mini-chat-input');
+  if (inp) inp.value = '';
+}
+
+function selectRPE(el) {
+  document.querySelectorAll('.rpe-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedEffort = parseInt(el.dataset.rpeVal);
+  document.getElementById('log-btn').disabled = false;
+
+  // Show mini-chat and fire AI coach opening message (only on first selection)
+  const miniChat = document.getElementById('mini-chat');
+  miniChat.style.display = 'block';
+  if (!miniChatActive) {
+    miniChatActive = true;
+    callMiniCoach(null);
+  }
+}
+
+// ─── MINI-CHAT FUNCTIONS ─────────────────────────────────────────
+
+async function callMiniCoach(userText) {
+  const msgs = document.getElementById('mini-chat-messages');
+  const sendBtn = document.getElementById('mini-chat-send-btn');
+  if (sendBtn) sendBtn.disabled = true;
+
+  // Show typing indicator
+  const typingEl = document.createElement('div');
+  typingEl.className = 'mc-bubble coach mc-typing';
+  typingEl.innerHTML = '<div class="mc-typing-dot"></div><div class="mc-typing-dot"></div><div class="mc-typing-dot"></div>';
+  msgs.appendChild(typingEl);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token;
+    const profileContext = profile ? `Sport: ${profile.sport}, Goal: ${profile.goal}, Level: ${profile.level}, Days/week: ${profile.weekly_days}` : '';
+
+    const autoMsg = userText || `Just finished "${activeWorkout?.title}" — RPE ${selectedEffort}/10.`;
+    if (!userText) miniChatNotes = `RPE: ${selectedEffort}/10`;
+
+    const resp = await fetch('/.netlify/functions/ai-coach', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({
+        message: autoMsg,
+        history: miniChatHistory.slice(-4),
+        profile: profileContext,
+        schedule: '',
+        today: toLocalDateStr(new Date()),
+        postWorkout: {
+          title: activeWorkout?.title || '',
+          type: activeWorkout?.type || '',
+          duration_minutes: activeWorkout?.duration_minutes || 0,
+          rpe: selectedEffort,
+        },
+      })
+    });
+
+    typingEl.remove();
+    let reply = 'Great effort! How are you feeling overall?';
+    if (resp.ok) {
+      const data = await resp.json();
+      reply = data.reply || reply;
+    }
+
+    const bubble = document.createElement('div');
+    bubble.className = 'mc-bubble coach';
+    bubble.textContent = reply;
+    msgs.appendChild(bubble);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    miniChatHistory.push({ role: 'user', content: autoMsg });
+    miniChatHistory.push({ role: 'assistant', content: reply });
+    miniChatNotes += `\nCoach: ${reply}`;
+
+  } catch(e) {
+    typingEl.remove();
+    const bubble = document.createElement('div');
+    bubble.className = 'mc-bubble coach';
+    bubble.textContent = 'Great effort today! How are you feeling?';
+    msgs.appendChild(bubble);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  if (sendBtn) sendBtn.disabled = false;
+}
+
+function sendMiniChat() {
+  const input = document.getElementById('mini-chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  const msgs = document.getElementById('mini-chat-messages');
+  const bubble = document.createElement('div');
+  bubble.className = 'mc-bubble user';
+  bubble.textContent = text;
+  msgs.appendChild(bubble);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  miniChatNotes += `\nMe: ${text}`;
+  callMiniCoach(text);
+}
+
+async function markComplete() {
+  if (!activeWorkout || !selectedEffort) return;
+
+  const btn = document.getElementById('log-btn');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    const notes = miniChatNotes.trim();
+
+    if (!activeWorkout.id.toString().startsWith('local-')) {
+      await sb.from('workouts').update({ completed: true, completed_at: new Date().toISOString() }).eq('id', activeWorkout.id);
+      await sb.from('workout_logs').insert({
+        user_id: user.id, workout_id: activeWorkout.id,
+        perceived_effort: selectedEffort, notes: notes,
+        actual_duration_minutes: activeWorkout.duration_minutes,
+      });
+    }
+
+    activeWorkout.completed = true;
+    if (currentPlan) {
+      const idx = currentPlan.findIndex(w => w.id === activeWorkout.id);
+      if (idx !== -1) {
+        currentPlan[idx].completed = true;
+        currentPlan[idx]._log = { perceived_effort: selectedEffort, notes };
+      }
+    }
+
+    closeModal();
+    await loadWeek(weekOffset);
+  } catch (e) {
+    btn.textContent = 'Log training →'; btn.disabled = false;
+    console.error(e);
+  }
+}
+
+function closeModal() {
+  document.getElementById('workout-modal').classList.remove('open');
+  activeWorkout = null;
+  selectedEffort = null;
+}
+
+// ─── UTILITIES ───────────────────────────────────────────────────
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+function getWeekStart(offset = 0) {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1) + offset * 7;
+  return new Date(d.setDate(diff));
+}
+
+const DAY_CODE_TO_OFFSET = { mon: 0, tue: 1, wed: 2, thu: 3, fri: 4, sat: 5, sun: 6 };
+
+function generateFallbackWeek(prof, weekStart) {
+  const sport = prof?.sport || 'hyrox';
+  const days = prof?.weekly_days || 4;
+  const level = prof?.level || 'intermediate';
+  const fallbackTypes = getFallbackPlan(sport, level, days);
+  weekStart = weekStart || getWeekStart();
+  const preferredOffsets = (prof?.preferred_days || []).map(d => DAY_CODE_TO_OFFSET[d]).filter(n => n !== undefined);
+  const trainingDays = (preferredOffsets.length ? preferredOffsets : [0, 2, 4, 5]).slice(0, days);
+  return trainingDays.map((dayOffset, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + dayOffset);
+    const template = fallbackTypes[i] || fallbackTypes[0];
+    return {
+      id: 'local-' + i,
+      user_id: null,
+      scheduled_date: toLocalDateStr(d),
+      type: template.type,
+      title: template.title,
+      duration_minutes: template.duration,
+      exercises_json: template.exercises,
+      completed: false,
+    };
+  });
+}
+
+async function generateAndSaveWeek(prof, weekStart) {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const resp = await fetch('/.netlify/functions/generate-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session?.access_token },
+      body: JSON.stringify({
+        sport: prof.sport, goal: prof.goal, level: prof.level,
+        equipment: prof.equipment, injuries: prof.injuries || [],
+        weekly_days: prof.weekly_days, preferred_days: prof.preferred_days || [],
+        race_date: prof.race_date, week_start_date: toLocalDateStr(weekStart),
+      }),
+    });
+    if (!resp.ok) return null;
+    const plan = await resp.json();
+    return plan.workouts && plan.workouts.length ? plan.workouts : null;
+  } catch (e) {
+    console.error('Failed to generate week:', e);
+    return null;
+  }
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  localStorage.removeItem('spaced_plan');
+  window.location.href = '../index.html';
+}
+
+// Close modal on overlay click
+document.getElementById('workout-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// PWA service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('../sw.js').catch(() => {});
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloaded) return; reloaded = true; window.location.reload();
+  });
+}
+
+loadDashboard();
+</script>
+
+<nav class="mobile-nav">
+  <a class="mn-item active" href="dashboard.html"><span class="mn-icon">📅</span><span data-i18n="sb_this_week">This Week</span></a>
+  <a class="mn-item" href="progress.html"><span class="mn-icon">📊</span><span data-i18n="sb_progress">Log</span></a>
+  <a class="mn-item" href="coach.html"><span class="mn-icon">🤖</span><span data-i18n="sb_coach">AI Coach</span></a>
+  <a class="mn-item" href="settings.html"><span class="mn-icon">⚙️</span><span data-i18n="sb_settings">Settings</span></a>
+</nav>
+</body>
+</html>

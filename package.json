@@ -1,0 +1,13 @@
+{
+  "name": "spaced-v2",
+  "version": "2.0.0",
+  "description": "AI-powered training coach for self-coached athletes",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.60.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "stripe": "^16.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPACED — Let's set up your plan</title>
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#1A6EFF">
+<link rel="icon" href="../icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Exo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+(function () {
+  var t = localStorage.getItem('spaced_theme');
+  if (t === 'light') document.documentElement.classList.add('light-mode');
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="../i18n.js"></script>
+<style>
+:root {
+  --bg: #0A0C14; --panel: #1a1e2a; --border: #252b3b;
+  --accent: #1A6EFF; --accent-dark: #0050CC; --cyan: #00C8FF; --coral: #ff6b4a; --text: #eef0f5; --muted: #8892a4;
+  --glass-bg: rgba(22,26,38,0.55); --glass-border: rgba(255,255,255,.05);
+}
+html.light-mode {
+  --bg: #f0f2f7; --bg2: #ffffff; --panel: #ffffff; --border: #e2e5f0;
+  --text: #1a1d2e; --muted: #6b7280; --accent: #1A6EFF; --accent-dark: #0050CC;
+  --glass-bg: rgba(255,255,255,0.55); --glass-border: rgba(0,0,0,.06);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; }
+
+.progress-bar { width: 100%; max-width: 560px; margin-bottom: 48px; }
+.progress-steps { display: flex; gap: 6px; }
+.progress-step { flex: 1; height: 3px; border-radius: 2px; background: var(--border); transition: background .3s; }
+.progress-step.active { background: var(--accent); }
+.progress-step.done { background: rgba(26,110,255,0.35); }
+
+.step-wrap { width: 100%; max-width: 560px; }
+.step-page { display: none; animation: fadeIn .3s; }
+.step-page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.step-label { font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px; }
+.step-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
+.step-sub { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+
+.option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 32px; }
+.option-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+.option-card {
+  background: var(--panel); border: 2px solid var(--border); border-radius: 12px;
+  padding: 18px 16px; cursor: pointer; transition: all .2s; text-align: center;
+}
+.option-card:hover { border-color: rgba(26,110,255,0.4); }
+.option-card.selected { border-color: var(--accent); background: rgba(26,110,255,0.07); }
+.option-icon { font-size: 28px; margin-bottom: 10px; }
+.option-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.option-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* Chips (multi-select) */
+.chip-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 32px; }
+.chip {
+  padding: 10px 18px; border-radius: 20px; background: var(--panel); border: 2px solid var(--border);
+  color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; user-select: none;
+}
+.chip:hover { border-color: rgba(26,110,255,0.4); }
+.chip.selected { border-color: var(--accent); background: rgba(26,110,255,0.07); color: var(--accent); }
+
+/* Days selector (used for count + weekday pickers) */
+.days-grid { display: flex; gap: 10px; margin-bottom: 32px; flex-wrap: wrap; }
+.day-btn {
+  width: 56px; height: 56px; border-radius: 12px;
+  background: var(--panel); border: 2px solid var(--border);
+  color: var(--text); font-size: 18px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+  font-family: 'Space Grotesk', sans-serif;
+}
+.day-btn.selected { background: rgba(26,110,255,0.1); border-color: var(--accent); color: var(--accent); }
+.day-btn.weekday { width: 64px; font-size: 13px; }
+.weekday-hint { font-size: 12px; color: var(--muted); margin: -20px 0 24px; }
+
+/* Date input */
+.input-wrap { margin-bottom: 32px; }
+.input-wrap label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.input-wrap input { width: 100%; background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 12px 16px; border-radius: 10px; font-size: 15px; }
+.input-wrap input:focus { outline: none; border-color: var(--accent); }
+.skip-link { color: var(--muted); font-size: 13px; cursor: pointer; margin-top: -20px; margin-bottom: 32px; display: block; }
+.skip-link:hover { color: var(--text); }
+
+.nav-btns { display: flex; gap: 12px; }
+.btn { padding: 13px 28px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; border: none; transition: all .2s; }
+.btn.primary { background: var(--accent); color: #fff; flex: 1; }
+.btn.primary:hover { background: var(--accent-dark); }
+.btn.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.ghost { background: var(--panel); color: var(--muted); border: 1px solid var(--border); }
+.btn.ghost:hover { color: var(--text); }
+
+/* Generating state */
+.generating { text-align: center; padding: 40px 0; }
+.gen-spinner { width: 50px; height: 50px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 24px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.gen-steps { text-align: left; max-width: 320px; margin: 24px auto 0; display: flex; flex-direction: column; gap: 12px; }
+.gen-step { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
+.gen-step.done { color: var(--accent); }
+.gen-step.done::before { content: '✓'; font-weight: 700; }
+.gen-step:not(.done)::before { content: '○'; }
+
+/* Plan summary */
+.summary-intro { text-align: center; margin-bottom: 28px; }
+.summary-intro .icon { font-size: 36px; margin-bottom: 12px; }
+.summary-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+.summary-item { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
+.summary-day { width: 76px; flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.summary-badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase; flex-shrink: 0; }
+.summary-badge.strength { background: rgba(255,107,74,0.15); color: var(--coral); }
+.summary-badge.cardio { background: rgba(26,110,255,0.15); color: var(--accent); }
+.summary-badge.intervals { background: rgba(100,180,255,0.15); color: #64b4ff; }
+.summary-badge.race_sim { background: rgba(26,110,255,0.12); color: var(--accent); }
+.summary-badge.recovery { background: rgba(255,255,255,0.05); color: var(--muted); }
+.summary-badge.technique { background: rgba(124,58,237,0.15); color: #a78bfa; }
+.summary-title { flex: 1; font-size: 14px; font-weight: 600; }
+.summary-dur { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+
+.brand { display: flex; align-items: center; gap: 8px; margin-bottom: 48px; }
+.brand-logo { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.brand span { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; }
+
+/* ── Glassmorphism (Iris v2, matches index.html) ──
+   No !important here: .option-card.selected / .chip.selected / .day-btn.selected
+   rely on winning by specificity over these base rules to keep their accent tint. */
+.option-card, .chip, .day-btn, .summary-item {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: var(--glass-border);
+}
+</style>
+</head>
+<body>
+
+<div class="step-wrap">
+  <div class="brand">
+    <div class="brand-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width:100%;height:100%;display:block;"><!-- top arm --><polygon points="50,4 38,38 50,50" fill="#c2e0ff"/><polygon points="50,4 50,50 62,38" fill="#2866d4"/><polygon points="50,4 38,38 43,22" fill="#e8f5ff"/><polygon points="50,4 62,38 57,22" fill="#1044a8"/><!-- right arm --><polygon points="96,50 62,38 50,50" fill="#7cbaf2"/><polygon points="96,50 50,50 62,62" fill="#1044a8"/><polygon points="96,50 62,38 78,43" fill="#aed4ff"/><polygon points="96,50 62,62 78,57" fill="#092e90"/><!-- bottom arm --><polygon points="50,96 62,62 50,50" fill="#c2e0ff"/><polygon points="50,96 50,50 38,62" fill="#2866d4"/><polygon points="50,96 62,62 57,78" fill="#e8f5ff"/><polygon points="50,96 38,62 43,78" fill="#1044a8"/><!-- left arm --><polygon points="4,50 38,62 50,50" fill="#7cbaf2"/><polygon points="4,50 50,50 38,38" fill="#1044a8"/><polygon points="4,50 38,62 22,57" fill="#aed4ff"/><polygon points="4,50 38,38 22,43" fill="#092e90"/><!-- center glow --><circle cx="50" cy="50" r="10" fill="white" opacity="0.88"/></svg></div>
+    <span>spaced</span>
+  </div>
+
+  <div class="progress-bar">
+    <div class="progress-steps">
+      <div class="progress-step active" id="ps1"></div>
+      <div class="progress-step" id="ps2"></div>
+      <div class="progress-step" id="ps3"></div>
+      <div class="progress-step" id="ps4"></div>
+      <div class="progress-step" id="ps5"></div>
+      <div class="progress-step" id="ps6"></div>
+      <div class="progress-step" id="ps7"></div>
+    </div>
+  </div>
+
+  <!-- STEP 1: Sport -->
+  <div class="step-page active" id="step1">
+    <div class="step-label" id="step-label-1">Step 1 of 7</div>
+    <h2 class="step-title" data-i18n="ob_step1_title">What do you train for?</h2>
+    <p class="step-sub" data-i18n="ob_step1_sub">SPACED builds sport-specific plans — not generic gym programs.</p>
+    <div class="option-grid">
+      <div class="option-card" data-val="hyrox" onclick="selectOption(this, 'sport')">
+        <div class="option-icon">⚡</div>
+        <div class="option-name">Hyrox</div>
+        <div class="option-desc">Station-specific conditioning + running</div>
+      </div>
+      <div class="option-card" data-val="running" onclick="selectOption(this, 'sport')">
+        <div class="option-icon">🏃</div>
+        <div class="option-name">Running</div>
+        <div class="option-desc">5K, 10K, half marathon, marathon</div>
+      </div>
+      <div class="option-card" data-val="functional_fitness" onclick="selectOption(this, 'sport')">
+        <div class="option-icon">🏋️</div>
+        <div class="option-name">Functional Fitness</div>
+        <div class="option-desc">CrossFit, GPP, competition prep</div>
+      </div>
+      <div class="option-card" data-val="cycling" onclick="selectOption(this, 'sport')">
+        <div class="option-icon">🚴</div>
+        <div class="option-name">Cycling</div>
+        <div class="option-desc">Road or MTB, structured power zones</div>
+      </div>
+      <div class="option-card" data-val="triathlon" onclick="selectOption(this, 'sport')">
+        <div class="option-icon">🏊</div>
+        <div class="option-name">Triathlon</div>
+        <div class="option-desc">Sprint to Ironman distance</div>
+      </div>
+      <div class="option-card" data-val="strength" onclick="selectOption(this, 'sport')">
+        <div class="option-icon">💪</div>
+        <div class="option-name">Strength</div>
+        <div class="option-desc">Powerlifting, Olympic lifting, bodybuilding</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn primary" id="next1" onclick="goTo(2)" disabled data-i18n="ob_continue_btn">Continue →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Goal -->
+  <div class="step-page" id="step2">
+    <div class="step-label" id="step-label-2">Step 2 of 7</div>
+    <h2 class="step-title" data-i18n="ob_step2_title">What's your main goal?</h2>
+    <p class="step-sub" data-i18n="ob_step2_sub">This shapes how the AI structures your training phases.</p>
+    <div class="option-grid cols3">
+      <div class="option-card" data-val="race" onclick="selectOption(this, 'goal')">
+        <div class="option-icon">🏁</div>
+        <div class="option-name">Race / Event</div>
+        <div class="option-desc">Preparing for a specific competition</div>
+      </div>
+      <div class="option-card" data-val="fitness" onclick="selectOption(this, 'goal')">
+        <div class="option-icon">📈</div>
+        <div class="option-name">Build Fitness</div>
+        <div class="option-desc">General performance improvement</div>
+      </div>
+      <div class="option-card" data-val="weight_loss" onclick="selectOption(this, 'goal')">
+        <div class="option-icon">⚖️</div>
+        <div class="option-name">Body Composition</div>
+        <div class="option-desc">Burn fat, build lean muscle</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn ghost" onclick="goTo(1)" data-i18n="ob_back_btn">← Back</button>
+      <button class="btn primary" id="next2" onclick="goTo(3)" disabled data-i18n="ob_continue_btn">Continue →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Level -->
+  <div class="step-page" id="step3">
+    <div class="step-label" id="step-label-3">Step 3 of 7</div>
+    <h2 class="step-title" data-i18n="ob_step3_title">How experienced are you?</h2>
+    <p class="step-sub" data-i18n="ob_step3_sub">Be honest — this determines training volume and intensity.</p>
+    <div class="option-grid cols3">
+      <div class="option-card" data-val="beginner" onclick="selectOption(this, 'level')">
+        <div class="option-icon">🌱</div>
+        <div class="option-name">Beginner</div>
+        <div class="option-desc">Less than 1 year of structured training</div>
+      </div>
+      <div class="option-card" data-val="intermediate" onclick="selectOption(this, 'level')">
+        <div class="option-icon">⚡</div>
+        <div class="option-name">Intermediate</div>
+        <div class="option-desc">1–3 years, some event experience</div>
+      </div>
+      <div class="option-card" data-val="advanced" onclick="selectOption(this, 'level')">
+        <div class="option-icon">🔥</div>
+        <div class="option-name">Advanced</div>
+        <div class="option-desc">3+ years, consistent competitor</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn ghost" onclick="goTo(2)" data-i18n="ob_back_btn">← Back</button>
+      <button class="btn primary" id="next3" onclick="goTo(4)" disabled data-i18n="ob_continue_btn">Continue →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Equipment -->
+  <div class="step-page" id="step4">
+    <div class="step-label" id="step-label-4">Step 4 of 7</div>
+    <h2 class="step-title" data-i18n="ob_step4_title">What equipment do you have access to?</h2>
+    <p class="step-sub" data-i18n="ob_step4_sub">This determines which exercises the AI can actually program for you.</p>
+    <div class="option-grid">
+      <div class="option-card" data-val="full_gym" onclick="selectOption(this, 'equipment')">
+        <div class="option-icon">🏢</div>
+        <div class="option-name">Full Gym</div>
+        <div class="option-desc">Barbells, racks, machines, cardio equipment</div>
+      </div>
+      <div class="option-card" data-val="home_basic" onclick="selectOption(this, 'equipment')">
+        <div class="option-icon">🏠</div>
+        <div class="option-name">Home — Basics</div>
+        <div class="option-desc">Dumbbells, kettlebells, bands, pull-up bar</div>
+      </div>
+      <div class="option-card" data-val="bodyweight" onclick="selectOption(this, 'equipment')">
+        <div class="option-icon">🤸</div>
+        <div class="option-name">Bodyweight Only</div>
+        <div class="option-desc">No equipment at all</div>
+      </div>
+      <div class="option-card" data-val="outdoor" onclick="selectOption(this, 'equipment')">
+        <div class="option-icon">🌳</div>
+        <div class="option-name">Outdoor / Track</div>
+        <div class="option-desc">Running, cycling — minimal gym access</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn ghost" onclick="goTo(3)" data-i18n="ob_back_btn">← Back</button>
+      <button class="btn primary" id="next4" onclick="goTo(5)" disabled data-i18n="ob_continue_btn">Continue →</button>
+    </div>
+  </div>
+
+  <!-- STEP 5: Injuries / limitations -->
+  <div class="step-page" id="step5">
+    <div class="step-label" id="step-label-5">Step 5 of 7</div>
+    <h2 class="step-title" data-i18n="ob_step5_title">Any injuries or limitations?</h2>
+    <p class="step-sub" data-i18n="ob_step5_sub">Select all that apply — the AI will avoid or modify exercises that could aggravate these.</p>
+    <div class="chip-grid" id="injury-chips">
+      <div class="chip selected" data-val="none" onclick="toggleInjury(this)">None</div>
+      <div class="chip" data-val="knee" onclick="toggleInjury(this)">Knee</div>
+      <div class="chip" data-val="shoulder" onclick="toggleInjury(this)">Shoulder</div>
+      <div class="chip" data-val="lower_back" onclick="toggleInjury(this)">Lower back</div>
+      <div class="chip" data-val="ankle_foot" onclick="toggleInjury(this)">Ankle / foot</div>
+      <div class="chip" data-val="wrist_elbow" onclick="toggleInjury(this)">Wrist / elbow</div>
+      <div class="chip" data-val="hip" onclick="toggleInjury(this)">Hip</div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn ghost" onclick="goTo(4)" data-i18n="ob_back_btn">← Back</button>
+      <button class="btn primary" id="next5" onclick="goTo(6)" data-i18n="ob_continue_btn">Continue →</button>
+    </div>
+  </div>
+
+  <!-- STEP 6: Preferred training days -->
+  <div class="step-page" id="step6">
+    <div class="step-label" id="step-label-6">Step 6 of 7</div>
+    <h2 class="step-title" data-i18n="ob_step6_title">Which days can you train?</h2>
+    <p class="step-sub" data-i18n="ob_step6_sub">Pick the specific days — the AI builds your plan around exactly this schedule.</p>
+    <div class="days-grid" id="weekday-grid">
+      <button class="day-btn weekday" data-val="mon" onclick="toggleWeekday(this)">Mon</button>
+      <button class="day-btn weekday" data-val="tue" onclick="toggleWeekday(this)">Tue</button>
+      <button class="day-btn weekday" data-val="wed" onclick="toggleWeekday(this)">Wed</button>
+      <button class="day-btn weekday" data-val="thu" onclick="toggleWeekday(this)">Thu</button>
+      <button class="day-btn weekday" data-val="fri" onclick="toggleWeekday(this)">Fri</button>
+      <button class="day-btn weekday" data-val="sat" onclick="toggleWeekday(this)">Sat</button>
+      <button class="day-btn weekday" data-val="sun" onclick="toggleWeekday(this)">Sun</button>
+    </div>
+    <p class="weekday-hint" id="weekday-count">Select at least 2 days</p>
+    <div class="nav-btns">
+      <button class="btn ghost" onclick="goTo(5)" data-i18n="ob_back_btn">← Back</button>
+      <button class="btn primary" id="next6" onclick="goTo(7)" disabled data-i18n="ob_continue_btn">Continue →</button>
+    </div>
+  </div>
+
+  <!-- STEP 7: Race date -->
+  <div class="step-page" id="step7">
+    <div class="step-label" id="step-label-7">Step 7 of 7</div>
+    <h2 class="step-title" data-i18n="ob_step7_title">When is your event?</h2>
+    <p class="step-sub" data-i18n="ob_step7_sub">SPACED reverse-engineers your plan so you peak at the right moment.</p>
+    <div class="input-wrap">
+      <label data-i18n="ob_race_date_label">Event / race date</label>
+      <input type="date" id="race-date" onchange="selections.race_date = this.value">
+    </div>
+    <a class="skip-link" onclick="selections.race_date = null" data-i18n="ob_skip_link">Skip — I'm training for general fitness</a>
+    <div class="nav-btns">
+      <button class="btn ghost" onclick="goTo(6)" data-i18n="ob_back_btn">← Back</button>
+      <button class="btn primary" onclick="generatePlan()" data-i18n="ob_generate_btn">Generate my plan ⚡</button>
+    </div>
+  </div>
+
+  <!-- GENERATING -->
+  <div class="step-page" id="step-generating">
+    <div class="generating">
+      <div class="gen-spinner"></div>
+      <h2 style="font-size:24px; margin-bottom:8px" data-i18n="ob_generating_title">Building your training plan…</h2>
+      <p style="color:var(--muted); font-size:14px" data-i18n="ob_generating_sub">This takes about 10–15 seconds</p>
+      <div class="gen-steps" id="gen-steps">
+        <div class="gen-step" id="gs1" data-i18n="ob_gen_step1">Analyzing your profile</div>
+        <div class="gen-step" id="gs2" data-i18n="ob_gen_step2">Calculating training zones</div>
+        <div class="gen-step" id="gs3" data-i18n="ob_gen_step3">Building periodization structure</div>
+        <div class="gen-step" id="gs4" data-i18n="ob_gen_step4">Generating week 1 workouts</div>
+        <div class="gen-step" id="gs5" data-i18n="ob_gen_step5">Finalizing your plan</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAN SUMMARY -->
+  <div class="step-page" id="step-summary">
+    <div class="summary-intro">
+      <div class="icon">✦</div>
+      <h2 class="step-title" data-i18n="ob_summary_title">Your training plan is ready</h2>
+      <p class="step-sub" style="margin-bottom:0" data-i18n="ob_summary_sub">Here's week 1. You can adjust anything with your AI coach anytime.</p>
+    </div>
+    <div class="summary-list" id="summary-list"></div>
+    <div class="nav-btns">
+      <button class="btn primary" onclick="goToDashboard()" data-i18n="ob_dashboard_btn">Go to my dashboard →</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let selections = {
+  sport: null, goal: null, level: null, equipment: null,
+  injuries: ['none'], preferred_days: [], race_date: null,
+};
+let currentStep = 1;
+const TOTAL_STEPS = 7;
+const WEEKDAY_LABELS = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
+const WEEKDAY_ORDER = ['mon','tue','wed','thu','fri','sat','sun'];
+
+// Local (not UTC) date string — see dashboard.html for why this matters.
+function toLocalDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function selectOption(el, field) {
+  el.closest('.option-grid').querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selections[field] = el.dataset.val;
+  const nextBtn = document.getElementById('next' + currentStep);
+  if (nextBtn) nextBtn.disabled = false;
+}
+
+function toggleInjury(el) {
+  const val = el.dataset.val;
+  const allChips = Array.from(document.querySelectorAll('#injury-chips .chip'));
+  if (val === 'none') {
+    allChips.forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selections.injuries = ['none'];
+    return;
+  }
+  // Selecting a real limitation deselects "None"
+  const noneChip = allChips.find(c => c.dataset.val === 'none');
+  noneChip.classList.remove('selected');
+  el.classList.toggle('selected');
+  selections.injuries = allChips.filter(c => c.classList.contains('selected')).map(c => c.dataset.val);
+  if (selections.injuries.length === 0) {
+    noneChip.classList.add('selected');
+    selections.injuries = ['none'];
+  }
+}
+
+function toggleWeekday(el) {
+  el.classList.toggle('selected');
+  const selected = Array.from(document.querySelectorAll('#weekday-grid .day-btn.selected'));
+  selections.preferred_days = WEEKDAY_ORDER.filter(d => selected.some(el2 => el2.dataset.val === d));
+  document.getElementById('weekday-count').textContent = selections.preferred_days.length > 0
+    ? SpacedI18n.tf('ob_weekday_hint_template', { n: selections.preferred_days.length })
+    : SpacedI18n.t('ob_weekday_hint_default');
+  document.getElementById('next6').disabled = selections.preferred_days.length < 2;
+}
+
+function updateStepLabel(step) {
+  const el = document.getElementById('step-label-' + step);
+  if (el) el.textContent = SpacedI18n.tf('ob_step_of_template', { n: step, total: TOTAL_STEPS });
+}
+
+function goTo(step) {
+  document.getElementById('step' + currentStep).classList.remove('active');
+  document.getElementById('step' + step).classList.add('active');
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const ps = document.getElementById('ps' + i);
+    if (i < step) { ps.classList.add('done'); ps.classList.remove('active'); }
+    else if (i === step) { ps.classList.add('active'); ps.classList.remove('done'); }
+    else { ps.classList.remove('done', 'active'); }
+  }
+  currentStep = step;
+  updateStepLabel(step);
+}
+
+async function generatePlan() {
+  document.getElementById('step' + currentStep).classList.remove('active');
+  document.getElementById('step-generating').classList.add('active');
+  document.querySelectorAll('.progress-step').forEach(ps => { ps.classList.add('done'); ps.classList.remove('active'); });
+
+  const steps = ['gs1','gs2','gs3','gs4','gs5'];
+  for (let i = 0; i < steps.length; i++) {
+    await delay(1000);
+    document.getElementById(steps[i]).classList.add('done');
+  }
+
+  const weeklyDays = selections.preferred_days.length || 4;
+  let plan = null;
+
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { window.location.href = 'auth.html'; return; }
+
+    await sb.from('athlete_profiles').upsert({
+      user_id: user.id,
+      full_name: user.user_metadata?.full_name || '',
+      sport: selections.sport || 'hyrox',
+      goal: selections.goal || 'fitness',
+      level: selections.level || 'intermediate',
+      equipment: selections.equipment || 'full_gym',
+      injuries: selections.injuries.filter(i => i !== 'none'),
+      preferred_days: selections.preferred_days,
+      weekly_days: weeklyDays,
+      race_date: selections.race_date || null,
+      onboarded: true,
+    }, { onConflict: 'user_id' });
+
+    const resp = await fetch('/.netlify/functions/generate-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (await sb.auth.getSession()).data.session?.access_token },
+      body: JSON.stringify({
+        sport: selections.sport, goal: selections.goal, level: selections.level,
+        equipment: selections.equipment, injuries: selections.injuries.filter(i => i !== 'none'),
+        weekly_days: weeklyDays, preferred_days: selections.preferred_days,
+        race_date: selections.race_date, week_start_date: toLocalDateStr(new Date()),
+      })
+    });
+
+    if (resp.ok) {
+      plan = await resp.json();
+      localStorage.setItem('spaced_plan', JSON.stringify(plan));
+    }
+  } catch (err) {
+    console.error(err);
+  }
+
+  if (!plan || !plan.workouts || plan.workouts.length === 0) {
+    plan = { workouts: localPreviewPlan() };
+  }
+
+  renderSummary(plan.workouts);
+  document.getElementById('step-generating').classList.remove('active');
+  document.getElementById('step-summary').classList.add('active');
+}
+
+function localPreviewPlan() {
+  // Last-resort preview if the plan API is fully unreachable — just for display,
+  // dashboard.html has its own fallback generator that saves real workouts.
+  const days = selections.preferred_days.length ? selections.preferred_days : ['mon','wed','fri','sat'];
+  const titles = {
+    hyrox: ['Upper Body + Core', '400m Speed Intervals', 'Lower Body Power', 'Mini Hyrox Simulation'],
+    running: ['Speed Intervals', 'Easy Long Run', 'Tempo Run', 'Running Strength'],
+  };
+  const types = ['strength', 'intervals', 'strength', 'race_sim'];
+  const list = titles[selections.sport] || titles.hyrox;
+  return days.map((d, i) => ({
+    day_label: WEEKDAY_LABELS[d],
+    title: list[i % list.length],
+    type: types[i % types.length],
+    duration_minutes: 45 + (i % 3) * 10,
+  }));
+}
+
+function renderSummary(workouts) {
+  const list = document.getElementById('summary-list');
+  list.innerHTML = workouts.map(w => {
+    const dayLabel = w.day_label || (w.scheduled_date ? new Date(w.scheduled_date).toLocaleDateString('en', { weekday: 'short' }) : '');
+    return `<div class="summary-item">
+      <div class="summary-day">${dayLabel}</div>
+      <span class="summary-badge ${w.type}">${(w.type || '').replace('_',' ')}</span>
+      <div class="summary-title">${w.title}</div>
+      <div class="summary-dur">⏱ ${w.duration_minutes} min</div>
+    </div>`;
+  }).join('');
+}
+
+function goToDashboard() {
+  window.location.href = 'dashboard.html';
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+updateStepLabel(1);
+document.getElementById('weekday-count').textContent = SpacedI18n.t('ob_weekday_hint_default');
+
+// Auth check
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (!session) window.location.href = 'auth.html';
+});
+</script>
+</body>
+</html>

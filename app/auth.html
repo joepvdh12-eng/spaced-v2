@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPACED — Sign in</title>
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#1A6EFF">
+<link rel="icon" href="../icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Exo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  var t = localStorage.getItem('spaced_theme');
+  if (t === 'light') document.documentElement.classList.add('light-mode');
+})();
+</script>
+<script src="config.js"></script>
+<script src="../i18n.js"></script>
+<style>
+:root {
+  --bg: #0A0C14; --panel: #1a1e2a; --border: #252b3b;
+  --accent: #1A6EFF; --accent-dark: #0050CC; --cyan: #00C8FF; --coral: #ff6b4a; --text: #eef0f5; --muted: #8892a4;
+  --glass-bg: rgba(22,26,38,0.55); --glass-border: rgba(255,255,255,.05);
+}
+
+html.light-mode {
+  --bg: #f0f2f7; --bg2: #ffffff; --panel: #ffffff; --border: #e2e5f0;
+  --text: #1a1d2e; --muted: #6b7280; --accent: #1A6EFF; --accent-dark: #0050CC;
+  --glass-bg: rgba(255,255,255,0.55); --glass-border: rgba(0,0,0,.06);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+h1, h2 { font-family: 'Space Grotesk', sans-serif; }
+
+.auth-wrap { width: 100%; max-width: 400px; }
+.brand { display: flex; align-items: center; gap: 10px; margin-bottom: 36px; justify-content: center; }
+.brand-logo { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.brand h1 { font-size: 22px; }
+
+.card {
+  background: var(--glass-bg) !important; border: 1px solid var(--glass-border) !important; border-radius: 16px; padding: 32px;
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 4px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+}
+.card-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.card-sub { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+
+.tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+.tab { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; margin-top: 16px; }
+input { width: 100%; background: #0E1020; border: 1px solid var(--border); color: var(--text); padding: 11px 14px; border-radius: 9px; font-size: 14px; transition: border-color .2s; }
+input:focus { outline: none; border-color: var(--accent); }
+
+.btn { width: 100%; margin-top: 22px; padding: 13px; border-radius: 9px; font-weight: 700; font-size: 14px; cursor: pointer; border: none; transition: all .2s; }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.primary:hover { background: var(--accent-dark); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.msg { margin-top: 14px; padding: 11px 14px; border-radius: 8px; font-size: 13px; display: none; }
+.msg.error { background: rgba(255,107,74,0.1); color: var(--coral); display: block; }
+.msg.success { background: rgba(34,197,94,.1); color: #16a34a; display: block; }
+
+.divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+.divider hr { flex: 1; border: none; border-top: 1px solid var(--border); }
+.divider span { color: var(--muted); font-size: 12px; }
+
+.back { display: block; text-align: center; margin-top: 20px; color: var(--muted); font-size: 13px; text-decoration: none; }
+.back:hover { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="brand">
+    <div class="brand-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width:100%;height:100%;display:block;"><!-- top arm --><polygon points="50,4 38,38 50,50" fill="#c2e0ff"/><polygon points="50,4 50,50 62,38" fill="#2866d4"/><polygon points="50,4 38,38 43,22" fill="#e8f5ff"/><polygon points="50,4 62,38 57,22" fill="#1044a8"/><!-- right arm --><polygon points="96,50 62,38 50,50" fill="#7cbaf2"/><polygon points="96,50 50,50 62,62" fill="#1044a8"/><polygon points="96,50 62,38 78,43" fill="#aed4ff"/><polygon points="96,50 62,62 78,57" fill="#092e90"/><!-- bottom arm --><polygon points="50,96 62,62 50,50" fill="#c2e0ff"/><polygon points="50,96 50,50 38,62" fill="#2866d4"/><polygon points="50,96 62,62 57,78" fill="#e8f5ff"/><polygon points="50,96 38,62 43,78" fill="#1044a8"/><!-- left arm --><polygon points="4,50 38,62 50,50" fill="#7cbaf2"/><polygon points="4,50 50,50 38,38" fill="#1044a8"/><polygon points="4,50 38,62 22,57" fill="#aed4ff"/><polygon points="4,50 38,38 22,43" fill="#092e90"/><!-- center glow --><circle cx="50" cy="50" r="10" fill="white" opacity="0.88"/></svg></div>
+    <h1>spaced</h1>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('login')" data-i18n="auth_signin_tab">Sign in</div>
+      <div class="tab" onclick="showTab('signup')" data-i18n="auth_signup_tab">Create account</div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="tab-login">
+      <form onsubmit="handleLogin(event)">
+        <label data-i18n="auth_email">Email</label>
+        <input type="email" id="login-email" placeholder="athlete@email.com" required>
+        <label data-i18n="auth_password">Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" required>
+        <button class="btn primary" type="submit" id="login-btn" data-i18n="auth_signin_btn">Sign in</button>
+      </form>
+      <div id="login-msg" class="msg"></div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div id="tab-signup" style="display:none">
+      <form onsubmit="handleSignup(event)">
+        <label data-i18n="auth_fullname">Full name</label>
+        <input type="text" id="signup-name" placeholder="Your name" required>
+        <label data-i18n="auth_email">Email</label>
+        <input type="email" id="signup-email" placeholder="athlete@email.com" required>
+        <label data-i18n="auth_password">Password</label>
+        <input type="password" id="signup-password" placeholder="8+ characters" required minlength="8">
+        <button class="btn primary" type="submit" id="signup-btn" data-i18n="auth_signup_btn">Create account — Start for €6.49</button>
+      </form>
+      <div id="signup-msg" class="msg"></div>
+      <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:14px" data-i18n="cta_note">50% off your first month · €12.99/month after · cancel anytime</p>
+    </div>
+  </div>
+
+  <a class="back" href="../index.html" data-i18n="auth_back">← Back to spaced.fit</a>
+</div>
+
+<script>
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function showTab(tab) {
+  document.getElementById('tab-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('tab-signup').style.display = tab === 'signup' ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', (i===0) === (tab==='login')));
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  const msg = document.getElementById('login-msg');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  msg.className = 'msg';
+
+  const { error } = await sb.auth.signInWithPassword({
+    email: document.getElementById('login-email').value,
+    password: document.getElementById('login-password').value,
+  });
+
+  if (error) {
+    msg.textContent = error.message;
+    msg.className = 'msg error';
+    btn.disabled = false; btn.textContent = 'Sign in';
+  } else {
+    // Check if onboarded
+    const { data: { user } } = await sb.auth.getUser();
+    const { data: profile } = await sb.from('athlete_profiles').select('onboarded').eq('user_id', user.id).single();
+    if (profile?.onboarded) {
+      window.location.href = 'dashboard.html';
+    } else {
+      window.location.href = 'onboarding.html';
+    }
+  }
+}
+
+async function handleSignup(e) {
+  e.preventDefault();
+  const btn = document.getElementById('signup-btn');
+  const msg = document.getElementById('signup-msg');
+  btn.disabled = true; btn.textContent = 'Creating account…';
+  msg.className = 'msg';
+
+  const { data, error } = await sb.auth.signUp({
+    email: document.getElementById('signup-email').value,
+    password: document.getElementById('signup-password').value,
+    options: { data: { full_name: document.getElementById('signup-name').value } }
+  });
+
+  if (error) {
+    msg.textContent = error.message;
+    msg.className = 'msg error';
+    btn.disabled = false; btn.textContent = 'Create account — Start for €6.49';
+  } else if (data.user && !data.session) {
+    msg.textContent = '✓ Check your email to confirm your account, then sign in.';
+    msg.className = 'msg success';
+    btn.disabled = false; btn.textContent = 'Create account — Start for €6.49';
+  } else {
+    window.location.href = 'onboarding.html';
+  }
+}
+
+// Auto-redirect if already logged in
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session) window.location.href = 'dashboard.html';
+});
+</script>
+</body>
+</html>

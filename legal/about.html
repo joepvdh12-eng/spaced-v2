@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPACED — About Us</title>
+<link rel="icon" href="../icons/favicon-32.png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Exo+2:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #0A0C14; --panel: #1a1e2a; --border: #252b3b; --accent: #1A6EFF; --text: #eef0f5; --muted: #8892a4; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; line-height: 1.7; }
+.header { background: #0E1020; border-bottom: 1px solid var(--border); padding: 16px 0; }
+.header-inner { max-width: 720px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
+.logo { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--text); }
+.logo-icon { width: 28px; height: 28px; border-radius: 6px; background: linear-gradient(135deg,#1A6EFF,#4A8FFF); display: flex; align-items: center; justify-content: center; font-size: 14px; color: #0A0C14; }
+.logo-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
+.back { color: var(--muted); font-size: 14px; text-decoration: none; }
+.back:hover { color: var(--text); }
+.content { max-width: 720px; margin: 0 auto; padding: 48px 24px 80px; }
+h1 { font-family: 'Space Grotesk', sans-serif; font-size: 32px; margin-bottom: 8px; }
+.meta { color: var(--muted); font-size: 14px; margin-bottom: 40px; }
+h2 { font-family: 'Space Grotesk', sans-serif; font-size: 18px; margin: 36px 0 12px; color: var(--accent); }
+p { color: #c8cdd8; margin-bottom: 14px; }
+ul { color: #c8cdd8; margin: 0 0 14px 20px; }
+ul li { margin-bottom: 6px; }
+a { color: var(--accent); }
+.highlight { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 20px 0; }
+.highlight p { margin: 0; }
+.values-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; }
+.value-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.value-card .icon { font-size: 20px; margin-bottom: 8px; }
+.value-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 14px; margin-bottom: 6px; }
+.value-card p { font-size: 13px; color: var(--muted); margin: 0; }
+@media (max-width: 600px) { .values-grid { grid-template-columns: 1fr; } }
+
+/* ── Glassmorphism (Iris v2, matches index.html) ── */
+.header {
+  background: rgba(13,15,23,0.72) !important;
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+}
+.highlight, .value-card {
+  background: rgba(22,26,38,0.55) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,.05) !important;
+  box-shadow: 0 4px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <a href="../index.html" class="logo">
+      <div class="logo-icon">⚡</div>
+      <span class="logo-name">SPACED</span>
+    </a>
+    <div style="display:flex;align-items:center;gap:20px">
+      <a href="privacy.html" class="back">Privacy</a>
+      <a href="terms.html" class="back">Terms</a>
+      <a href="../index.html" class="back">← Back to home</a>
+    </div>
+  </div>
+</header>
+
+<div class="content">
+  <h1>About Us</h1>
+  <p class="meta">SPACED is built by Joepiter, a Netherlands-based sole trader (eenmanszaak)</p>
+
+  <div class="highlight">
+    <p>We built SPACED because we believe every self-coached athlete deserves the same quality of training a paid coach would give them — without the €150–300/month price tag.</p>
+  </div>
+
+  <h2>Why we started</h2>
+  <p>Most serious amateur athletes — Hyrox competitors, runners, functional fitness athletes — coach themselves. They piece together workouts from YouTube, forums, and guesswork, without a clear plan that adapts to how their training is actually going.</p>
+  <p>A real coach solves that, but costs more than most people are willing or able to pay every month. SPACED exists to close that gap: an AI coach that knows your sport, your goal, your race date, and your recent sessions, and adjusts your plan the moment you need it to — not on the coach's schedule, but on yours.</p>
+
+  <h2>What we do</h2>
+  <p>SPACED generates a complete, periodized training plan from a short intake, then keeps adapting it as you log sessions and talk to your AI coach. No generic templates, no one-size-fits-all programs — the plan is built around your sport, your equipment, your limitations, and the date you're training toward.</p>
+
+  <h2>What we care about</h2>
+  <div class="values-grid">
+    <div class="value-card">
+      <div class="icon">🎯</div>
+      <h3>Built for real athletes</h3>
+      <p>We design for people training toward an actual race or goal, not generic "get fit" content.</p>
+    </div>
+    <div class="value-card">
+      <div class="icon">🔒</div>
+      <h3>Your data stays yours</h3>
+      <p>We never sell your data. See our <a href="privacy.html">Privacy Policy</a> for the full detail.</p>
+    </div>
+    <div class="value-card">
+      <div class="icon">💬</div>
+      <h3>Honest, direct coaching</h3>
+      <p>Our AI coach tells you what a good human coach would — including when to rest.</p>
+    </div>
+    <div class="value-card">
+      <div class="icon">💶</div>
+      <h3>Fair pricing</h3>
+      <p>Coaching quality shouldn't require a coach's price tag. We aim to stay a fraction of the cost.</p>
+    </div>
+  </div>
+
+  <h2>Who's behind it</h2>
+  <p>SPACED is developed and operated by Joepiter, a sole trader based in the Netherlands and registered with the Dutch Chamber of Commerce (KVK). We're a small, independent team — which means your feedback goes directly into what we build next.</p>
+
+  <h2>Get in touch</h2>
+  <p>Questions, feedback, or partnership ideas: <a href="mailto:hello@spaced.app">hello@spaced.app</a><br>
+  For anything related to your data or privacy: <a href="mailto:privacy@spaced.app">privacy@spaced.app</a></p>
+  <p>Joepiter &nbsp;|&nbsp; KVK: [your KVK number] &nbsp;|&nbsp; Netherlands</p>
+</div>
+</body>
+</html>

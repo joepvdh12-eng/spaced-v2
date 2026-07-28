@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPACED — Your AI Training Coach</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1A6EFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SPACED">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Exo+2:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app/config.js"></script>
+<script src="i18n.js"></script>
+<style>
+:root {
+  --bg: #0A0C14;
+  --bg2: #0E1020;
+  --panel: #1a1e2a;
+  --border: #252b3b;
+  --accent: #1A6EFF;
+  --accent-dark: #0050CC;
+  --coral: #ff6b4a;
+  --text: #eef0f5;
+  --muted: #8892a4;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; line-height: 1.6; overflow-x: hidden; }
+h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; }
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 16px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(13,15,23,0.85); backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(37,43,59,0.5);
+}
+.nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.nav-logo {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.nav-brand span { font-family: 'Exo 2', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.08em; color: var(--text); }
+.nav-links { display: flex; align-items: center; gap: 32px; }
+.nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; transition: color .2s; }
+.nav-links a:hover { color: var(--text); }
+.nav-actions { display: flex; align-items: center; gap: 18px; }
+.nav-login { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 600; transition: color .2s; }
+.nav-login:hover { color: var(--text); }
+.nav-cta { background: var(--accent); color: #fff; border: none; padding: 9px 20px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; text-decoration: none; transition: background .2s; }
+.nav-cta:hover { background: var(--accent-dark); }
+
+/* HERO */
+.hero {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 120px 40px 80px;
+  position: relative; overflow: hidden;
+}
+/* .hero-glow replaced by .hero-orb (Iris v2) */
+.hero-content { max-width: 760px; text-align: center; position: relative; z-index: 1; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(26,110,255,0.1); border: 1px solid rgba(26,110,255,0.25);
+  color: var(--accent); font-size: 12px; font-weight: 600;
+  padding: 5px 12px; border-radius: 20px; margin-bottom: 28px;
+}
+.hero-badge span { font-size: 10px; }
+h1.hero-title { font-size: clamp(42px, 7vw, 76px); line-height: 1.05; margin-bottom: 24px; }
+h1.hero-title em { color: var(--accent); font-style: normal; }
+.hero-sub { font-size: 18px; color: var(--muted); max-width: 520px; margin: 0 auto 40px; line-height: 1.7; }
+.hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--accent); color: #fff; border: none;
+  padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 15px;
+  cursor: pointer; text-decoration: none; transition: all .2s; display: inline-block;
+}
+.btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
+.btn-ghost {
+  background: transparent; color: var(--text); border: 1px solid var(--border);
+  padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 15px;
+  cursor: pointer; text-decoration: none; transition: all .2s; display: inline-block;
+}
+.btn-ghost:hover { border-color: var(--muted); }
+.hero-social { margin-top: 48px; color: var(--muted); font-size: 13px; }
+.hero-social strong { color: var(--text); }
+
+/* SPORTS TICKER */
+.ticker { overflow: hidden; padding: 20px 0; background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 0; }
+.ticker-track { display: flex; gap: 0; white-space: nowrap; animation: ticker 20s linear infinite; }
+.ticker-item { padding: 0 40px; color: var(--muted); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.ticker-item .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
+@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+/* MOCKUP */
+.mockup-section { padding: 80px 40px; display: flex; justify-content: center; background: linear-gradient(to bottom, var(--bg2), var(--bg)); }
+.app-mockup {
+  width: 100%; max-width: 900px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 20px;
+  overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+}
+.mockup-bar { background: var(--bg2); padding: 12px 20px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
+.mockup-dot { width: 11px; height: 11px; border-radius: 50%; }
+.mockup-url { background: var(--panel); border-radius: 5px; padding: 4px 14px; font-size: 11px; color: var(--muted); flex: 1; margin: 0 20px; text-align: center; }
+.mockup-body { padding: 28px; display: grid; grid-template-columns: 220px 1fr; gap: 20px; min-height: 440px; }
+.mockup-sidebar { display: flex; flex-direction: column; gap: 6px; }
+.sidebar-item { padding: 9px 12px; border-radius: 8px; font-size: 13px; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.sidebar-item.active { background: rgba(26,110,255,0.1); color: var(--accent); }
+.mockup-main { display: flex; flex-direction: column; gap: 16px; }
+.week-header { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; }
+.week-header span { color: var(--muted); font-size: 13px; font-weight: 400; font-family: 'Space Grotesk', sans-serif; margin-left: 8px; }
+.workout-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.workout-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.workout-card.done { border-color: rgba(26,110,255,0.3); background: rgba(26,110,255,0.05); }
+.workout-card.rest { opacity: 0.5; }
+.wc-day { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; margin-bottom: 6px; }
+.wc-type { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 600; display: inline-block; margin-bottom: 8px; }
+.wc-type.strength { background: rgba(255,107,74,0.15); color: var(--coral); }
+.wc-type.cardio { background: rgba(26,110,255,0.15); color: var(--accent); }
+.wc-type.intervals { background: rgba(100,180,255,0.15); color: #64b4ff; }
+.wc-type.rest { background: var(--border); color: var(--muted); }
+.wc-title { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.wc-time { font-size: 11px; color: var(--muted); }
+.wc-check { width: 16px; height: 16px; border-radius: 4px; background: var(--accent); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: #fff; float: right; }
+.ai-card { background: var(--bg2); border: 1px solid rgba(26,110,255,0.2); border-radius: 10px; padding: 14px; display: flex; gap: 10px; }
+.ai-avatar { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #00C8FF, #1A6EFF); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.ai-text { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.ai-text strong { color: var(--text); }
+
+/* FEATURES */
+.features { padding: 100px 40px; max-width: 1100px; margin: 0 auto; }
+.section-label { font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 14px; }
+.section-title { font-size: clamp(30px, 4vw, 46px); margin-bottom: 16px; line-height: 1.15; }
+.section-sub { color: var(--muted); font-size: 16px; max-width: 540px; margin-bottom: 60px; }
+.features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.feature-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; transition: border-color .2s; }
+.feature-card:hover { border-color: rgba(26,110,255,0.3); }
+.feature-icon { width: 44px; height: 44px; border-radius: 10px; background: rgba(26,110,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 18px; }
+.feature-card h3 { font-size: 17px; margin-bottom: 10px; }
+.feature-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+/* SPORTS */
+.sports-section { padding: 80px 40px; background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.sports-inner { max-width: 1100px; margin: 0 auto; }
+.sports-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 50px; }
+.sport-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 16px; text-align: center; cursor: pointer; transition: all .2s; }
+.sport-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+.sport-card:hover .sport-icon { background: rgba(26,110,255,0.15); }
+.sport-icon { width: 48px; height: 48px; border-radius: 12px; background: var(--bg2); display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 12px; }
+.sport-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.sport-card p { font-size: 12px; color: var(--muted); }
+.sport-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 4px; background: rgba(26,110,255,0.1); color: var(--accent); font-weight: 600; margin-top: 8px; }
+
+/* HOW IT WORKS */
+.how-section { padding: 100px 40px; max-width: 1100px; margin: 0 auto; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative; margin-top: 60px; }
+.steps::before { content: ''; position: absolute; top: 24px; left: 10%; right: 10%; height: 1px; background: linear-gradient(to right, transparent, var(--border), var(--border), transparent); }
+.step { text-align: center; padding: 0 20px; }
+.step-num { width: 48px; height: 48px; border-radius: 50%; background: var(--panel); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; margin: 0 auto 20px; position: relative; z-index: 1; }
+.step:first-child .step-num { border-color: var(--accent); color: var(--accent); }
+.step h4 { font-size: 16px; margin-bottom: 8px; }
+.step p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* PRICING */
+.pricing-section { padding: 100px 40px; background: var(--bg2); border-top: 1px solid var(--border); }
+.pricing-inner { max-width: 800px; margin: 0 auto; }
+.pricing-toggle { display: flex; align-items: center; gap: 12px; justify-content: center; margin: 40px 0; }
+.toggle-btn { padding: 7px 20px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.toggle-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.save-badge { background: rgba(26,110,255,0.1); color: var(--accent); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+.pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.pricing-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+.pricing-card.featured { border-color: var(--accent); background: linear-gradient(135deg, rgba(26,110,255,0.05), var(--panel)); }
+.plan-name { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.plan-price { margin: 16px 0 8px; }
+.plan-price .amount { font-family: 'Space Grotesk', sans-serif; font-size: 42px; font-weight: 800; }
+.plan-price .per { color: var(--muted); font-size: 14px; }
+.plan-desc { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+.plan-features { list-style: none; margin-bottom: 28px; display: flex; flex-direction: column; gap: 10px; }
+.plan-features li { font-size: 14px; display: flex; align-items: center; gap: 9px; }
+.plan-features li::before { content: '✓'; color: var(--accent); font-weight: 700; font-size: 13px; }
+.plan-features li.muted::before { content: '–'; color: var(--border); }
+.plan-features li.muted { color: var(--muted); }
+.plan-btn { width: 100%; padding: 13px; border-radius: 9px; font-weight: 700; font-size: 14px; cursor: pointer; border: none; transition: all .2s; }
+.plan-btn.primary { background: var(--accent); color: #fff; }
+.plan-btn.primary:hover { background: var(--accent-dark); }
+.plan-btn.secondary { background: var(--bg2); color: var(--text); border: 1px solid var(--border); }
+.plan-btn.secondary:hover { border-color: var(--muted); }
+
+/* TESTIMONIALS */
+.testimonials { padding: 100px 40px; max-width: 1100px; margin: 0 auto; }
+.testi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 50px; }
+.testi-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+.testi-stars { color: var(--accent); font-size: 13px; margin-bottom: 12px; }
+.testi-text { font-size: 14px; color: var(--muted); line-height: 1.7; margin-bottom: 18px; }
+.testi-author { display: flex; align-items: center; gap: 10px; }
+.testi-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--bg2); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.testi-name { font-size: 13px; font-weight: 700; }
+.testi-info { font-size: 11px; color: var(--muted); }
+
+/* CTA */
+.cta-section {
+  padding: 100px 40px; text-align: center;
+  background: linear-gradient(135deg, rgba(26,110,255,0.06), rgba(255,107,74,0.04));
+  border-top: 1px solid var(--border);
+}
+.cta-section h2 { font-size: clamp(32px, 5vw, 56px); margin-bottom: 16px; line-height: 1.15; }
+.cta-section h2 em { color: var(--accent); font-style: normal; }
+.cta-section p { color: var(--muted); font-size: 17px; max-width: 460px; margin: 0 auto 36px; }
+.cta-note { font-size: 12px; color: var(--muted); margin-top: 14px; }
+
+/* FOOTER */
+footer { padding: 50px 40px 30px; border-top: 1px solid var(--border); background: var(--bg); }
+.footer-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+.footer-brand { display: flex; align-items: center; gap: 8px; font-family: 'Exo 2', sans-serif; letter-spacing: 0.08em; font-size: 16px; font-weight: 700; }
+.footer-links { display: flex; gap: 24px; }
+.footer-links a { color: var(--muted); text-decoration: none; font-size: 13px; }
+.footer-links a:hover { color: var(--text); }
+.footer-copy { color: var(--muted); font-size: 12px; margin-top: 30px; text-align: center; }
+
+@media (max-width: 768px) {
+  nav { padding: 14px 20px; }
+  .nav-links { display: none; }
+  .hero { padding: 100px 20px 60px; }
+  .features-grid, .sports-grid, .steps, .pricing-grid, .testi-grid { grid-template-columns: 1fr 1fr; }
+  .sports-grid { grid-template-columns: 1fr 1fr 1fr; }
+  .steps { gap: 30px; }
+  .steps::before { display: none; }
+  .mockup-body { grid-template-columns: 1fr; }
+  .mockup-sidebar { display: none; }
+  .workout-grid { grid-template-columns: 1fr 1fr; }
+  .footer-inner { flex-direction: column; gap: 20px; }
+  .hero-orb { display: none; }
+}
+
+/* ═══════════════════════════════════════
+   PREMIUM VISUAL LAYER — Iris v2
+   ═══════════════════════════════════════ */
+
+/* Ensure z-index layering works */
+nav, .hero-content, .ticker, .mockup-section, .features, .sports-section,
+.how-section, .pricing-section, .testimonials, .cta-section, footer {
+  position: relative; z-index: 1;
+}
+
+/* ── Hero Orb (Payius-style beam + glowing point) ── */
+.hero-orb {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -56%);
+  pointer-events: none; z-index: 0;
+  width: 0; height: 0;
+}
+.orb-glow-outer {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 900px; height: 700px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    rgba(26,110,255,0.09) 0%,
+    rgba(26,110,255,0.03) 38%,
+    transparent 65%);
+  animation: orb-breathe 5s ease-in-out infinite;
+}
+.orb-glow-mid {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px; height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(26,110,255,0.2) 0%,
+    rgba(26,110,255,0.06) 40%,
+    transparent 70%);
+  animation: orb-breathe 5s ease-in-out infinite reverse;
+}
+.orb-point {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 7px; height: 7px;
+  background: #eaff99;
+  border-radius: 50%;
+  z-index: 3;
+  box-shadow:
+    0 0 0 3px rgba(26,110,255,0.45),
+    0 0 18px rgba(26,110,255,1),
+    0 0 60px rgba(26,110,255,0.75),
+    0 0 140px rgba(26,110,255,0.3);
+  animation: point-pulse 2.2s ease-in-out infinite;
+}
+/* Beam rays radiating to the right */
+.orb-beams {
+  position: absolute; top: 50%; left: 50%;
+  width: 0; height: 0;
+}
+.orb-beams span {
+  position: absolute;
+  left: 0; top: 0;
+  height: 1px;
+  transform-origin: left center;
+  background: linear-gradient(to right, rgba(26,110,255,0.45), transparent);
+  border-radius: 1px;
+  animation: beam-fade 5s ease-in-out infinite;
+}
+.orb-beams span:nth-child(1) { width: 350px; transform: rotate(-22deg); opacity: .55; animation-delay: 0s; }
+.orb-beams span:nth-child(2) { width: 430px; transform: rotate(-10deg); opacity: .8; height: 1.5px; animation-delay: .4s; }
+.orb-beams span:nth-child(3) { width: 460px; transform: rotate(0deg); opacity: 1; height: 2px; animation-delay: .2s;
+  background: linear-gradient(to right, rgba(26,110,255,0.6), transparent); }
+.orb-beams span:nth-child(4) { width: 420px; transform: rotate(10deg); opacity: .8; height: 1.5px; animation-delay: .6s; }
+.orb-beams span:nth-child(5) { width: 340px; transform: rotate(22deg); opacity: .55; animation-delay: .1s; }
+/* Extra subtle outer rays */
+.orb-beams span:nth-child(6) { width: 260px; transform: rotate(-35deg); opacity: .25; animation-delay: .3s; }
+.orb-beams span:nth-child(7) { width: 240px; transform: rotate(35deg); opacity: .25; animation-delay: .5s; }
+
+@keyframes orb-breathe {
+  0%, 100% { opacity: .8; transform: translate(-50%,-50%) scale(1); }
+  50%       { opacity: 1; transform: translate(-50%,-50%) scale(1.06); }
+}
+@keyframes point-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(26,110,255,.45), 0 0 18px rgba(26,110,255,1),
+                0 0 60px rgba(26,110,255,.75), 0 0 140px rgba(26,110,255,.3);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(26,110,255,.35), 0 0 36px rgba(26,110,255,1),
+                0 0 100px rgba(26,110,255,.6), 0 0 210px rgba(26,110,255,.18);
+  }
+}
+@keyframes beam-fade {
+  0%, 100% { opacity: var(--base-op, 1); }
+  50%       { opacity: calc(var(--base-op, 1) * 0.65); }
+}
+
+/* ── Glassmorphism: Feature Cards ── */
+.feature-card {
+  background: rgba(22,26,38,0.55) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(26,110,255,0.07) !important;
+  box-shadow: 0 4px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+}
+.feature-card:hover {
+  border-color: rgba(26,110,255,0.22) !important;
+  box-shadow: 0 8px 44px rgba(0,0,0,.45), 0 0 28px rgba(26,110,255,.06), inset 0 1px 0 rgba(255,255,255,.07);
+}
+
+/* ── Glassmorphism: Testimonials ── */
+.testi-card {
+  background: rgba(22,26,38,0.5) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,.05) !important;
+  transition: border-color .25s, box-shadow .25s;
+}
+.testi-card:hover {
+  border-color: rgba(26,110,255,.12) !important;
+  box-shadow: 0 0 24px rgba(26,110,255,.04);
+}
+
+/* ── Glassmorphism: Sport Cards ── */
+.sport-card {
+  background: rgba(22,26,38,0.55) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.04) !important;
+}
+.sport-card:hover {
+  border-color: rgba(26,110,255,.3) !important;
+  box-shadow: 0 0 24px rgba(26,110,255,.08);
+}
+
+/* ── Glassmorphism: Pricing ── */
+.pricing-card {
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  background: rgba(22,26,38,0.6) !important;
+}
+.pricing-card.featured {
+  border-color: rgba(26,110,255,.22) !important;
+  box-shadow: 0 0 50px rgba(26,110,255,.07), inset 0 1px 0 rgba(26,110,255,.08);
+}
+
+/* ── Glassmorphism: Mockup ── */
+.app-mockup {
+  background: rgba(26,30,42,0.7) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 60px 120px rgba(0,0,0,.6), 0 0 0 1px rgba(26,110,255,.06) !important;
+}
+
+/* ── Nav glass upgrade ── */
+nav {
+  background: rgba(13,15,23,0.72) !important;
+  backdrop-filter: blur(24px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.4) !important;
+}
+
+/* ── Step number glow ── */
+.step:first-child .step-num {
+  box-shadow: 0 0 20px rgba(26,110,255,.25), 0 0 6px rgba(26,110,255,.5);
+}
+
+/* ── Section label subtle glow ── */
+.section-label {
+  text-shadow: 0 0 20px rgba(26,110,255,.4);
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-brand" href="#">
+    <div class="nav-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width:100%;height:100%;display:block;"><!-- top arm --><polygon points="50,4 38,38 50,50" fill="#c2e0ff"/><polygon points="50,4 50,50 62,38" fill="#2866d4"/><polygon points="50,4 38,38 43,22" fill="#e8f5ff"/><polygon points="50,4 62,38 57,22" fill="#1044a8"/><!-- right arm --><polygon points="96,50 62,38 50,50" fill="#7cbaf2"/><polygon points="96,50 50,50 62,62" fill="#1044a8"/><polygon points="96,50 62,38 78,43" fill="#aed4ff"/><polygon points="96,50 62,62 78,57" fill="#092e90"/><!-- bottom arm --><polygon points="50,96 62,62 50,50" fill="#c2e0ff"/><polygon points="50,96 50,50 38,62" fill="#2866d4"/><polygon points="50,96 62,62 57,78" fill="#e8f5ff"/><polygon points="50,96 38,62 43,78" fill="#1044a8"/><!-- left arm --><polygon points="4,50 38,62 50,50" fill="#7cbaf2"/><polygon points="4,50 50,50 38,38" fill="#1044a8"/><polygon points="4,50 38,62 22,57" fill="#aed4ff"/><polygon points="4,50 38,38 22,43" fill="#092e90"/><!-- center glow --><circle cx="50" cy="50" r="10" fill="white" opacity="0.88"/></svg></div>
+    <span>spaced</span>
+  </a>
+  <div class="nav-links">
+    <a href="#features" data-i18n="nav_features">Features</a>
+    <a href="#sports" data-i18n="nav_sports">Sports</a>
+    <a href="#pricing" data-i18n="nav_pricing">Pricing</a>
+    <a href="#how" data-i18n="nav_how">How it works</a>
+  </div>
+  <div class="nav-actions">
+    <select id="lang-select" onchange="SpacedI18n.setLang(this.value)" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 10px;border-radius:8px;font-size:13px;cursor:pointer">
+      <option value="en">EN</option>
+      <option value="nl">NL</option>
+      <option value="de">DE</option>
+      <option value="fr">FR</option>
+      <option value="es">ES</option>
+    </select>
+    <a class="nav-login" href="app/auth.html" id="nav-login-link" data-i18n="nav_login">Log in</a>
+    <a class="nav-cta" href="app/auth.html" id="nav-cta-link" data-i18n="nav_cta">Start for €6.49 →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <!-- Iris v2 — Premium hero visual -->
+  <div class="hero-orb" aria-hidden="true">
+    <div class="orb-glow-outer"></div>
+    <div class="orb-glow-mid"></div>
+    <div class="orb-point"></div>
+    <div class="orb-beams">
+      <span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-badge"><span>🛰️</span> <span data-i18n="hero_badge">AI training companion for athletes</span></div>
+    <h1 class="hero-title" data-i18n-html="hero_title_html">Train like a pro.<br><em>Without the coach price.</em></h1>
+    <p class="hero-sub" data-i18n="hero_sub">SPACED builds your complete training plan in 60 seconds, then adapts it the moment you log a session. No waiting for a check-in. No Tuesday feedback that should've come Monday. Just precise, adaptive training built around you.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="app/auth.html" data-i18n="hero_cta_primary">Start for €6.49 →</a>
+      <a class="btn-ghost" href="#how" data-i18n="hero_cta_ghost">See how it works</a>
+    </div>
+    <p class="hero-social" style="margin-top:36px; font-size:13px; color:var(--muted);" data-i18n-html="hero_social_html">50% off your first month · <strong>€6.49 to start</strong> · €12.99/month after · cancel anytime</p>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-track" id="ticker">
+    <div class="ticker-item"><span class="dot"></span> Hyrox</div>
+    <div class="ticker-item"><span class="dot"></span> Running</div>
+    <div class="ticker-item"><span class="dot"></span> Functional Fitness</div>
+    <div class="ticker-item"><span class="dot"></span> Triathlon</div>
+    <div class="ticker-item"><span class="dot"></span> Cycling</div>
+    <div class="ticker-item"><span class="dot"></span> CrossFit</div>
+    <div class="ticker-item"><span class="dot"></span> OCR</div>
+    <div class="ticker-item"><span class="dot"></span> Weightlifting</div>
+    <div class="ticker-item"><span class="dot"></span> Hyrox</div>
+    <div class="ticker-item"><span class="dot"></span> Running</div>
+    <div class="ticker-item"><span class="dot"></span> Functional Fitness</div>
+    <div class="ticker-item"><span class="dot"></span> Triathlon</div>
+    <div class="ticker-item"><span class="dot"></span> Cycling</div>
+    <div class="ticker-item"><span class="dot"></span> CrossFit</div>
+    <div class="ticker-item"><span class="dot"></span> OCR</div>
+    <div class="ticker-item"><span class="dot"></span> Weightlifting</div>
+  </div>
+</div>
+
+<!-- MOCKUP -->
+<section class="mockup-section">
+  <div class="app-mockup">
+    <div class="mockup-bar">
+      <div class="mockup-dot" style="background:#ff5f57"></div>
+      <div class="mockup-dot" style="background:#febc2e"></div>
+      <div class="mockup-dot" style="background:#28c840"></div>
+      <div class="mockup-url">app.spaced.fit/dashboard</div>
+    </div>
+    <div class="mockup-body">
+      <div class="mockup-sidebar">
+        <div class="sidebar-item active">📅 <span data-i18n="sb_this_week">This Week</span></div>
+        <div class="sidebar-item">📊 <span data-i18n="sb_progress">Progress</span></div>
+        <div class="sidebar-item">🤖 <span data-i18n="sb_coach">AI Coach</span></div>
+        <div class="sidebar-item">⚙️ <span data-i18n="sb_settings">Settings</span></div>
+      </div>
+      <div class="mockup-main">
+        <div class="week-header"><span data-i18n="mockup_week_header">Week 8 — Build Phase</span> <span data-i18n="mockup_week_sub">Hyrox Amsterdam · 6 weeks out</span></div>
+        <div class="workout-grid">
+          <div class="workout-card done">
+            <div class="wc-day" data-i18n="day_mon">Monday</div>
+            <span class="wc-type strength" data-i18n="mockup_badge_strength">Strength</span><div class="wc-check">✓</div>
+            <div class="wc-title" data-i18n="mockup_workout1_title">Upper body + core</div>
+            <div class="wc-time">⏱ 55 min</div>
+          </div>
+          <div class="workout-card done">
+            <div class="wc-day" data-i18n="day_tue">Tuesday</div>
+            <span class="wc-type intervals" data-i18n="mockup_badge_intervals">Intervals</span><div class="wc-check">✓</div>
+            <div class="wc-title" data-i18n="mockup_workout2_title">10×400m @ 5K pace</div>
+            <div class="wc-time">⏱ 50 min</div>
+          </div>
+          <div class="workout-card">
+            <div class="wc-day" data-i18n="day_thu">Thursday</div>
+            <span class="wc-type strength" data-i18n="mockup_badge_strength">Strength</span>
+            <div class="wc-title" data-i18n="mockup_workout3_title">Lower body power</div>
+            <div class="wc-time">⏱ 60 min</div>
+          </div>
+          <div class="workout-card">
+            <div class="wc-day" data-i18n="day_sat">Saturday</div>
+            <span class="wc-type cardio" data-i18n="mockup_badge_race_sim">Race Sim</span>
+            <div class="wc-title" data-i18n="mockup_workout4_title">Mini Hyrox simulation</div>
+            <div class="wc-time">⏱ 75 min</div>
+          </div>
+        </div>
+        <div class="ai-card">
+          <div class="ai-avatar">✦</div>
+          <div class="ai-text">
+            <strong data-i18n="mockup_coach_label">Coach says:</strong> <span data-i18n="mockup_coach_msg">Great effort on Tuesday's intervals — your splits are improving. For Saturday's race sim, focus on pacing the ski erg in the first 2 minutes. Keep power at 75%, you tend to go out too hard.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-label" data-i18n="features_label">What SPACED does</div>
+  <h2 class="section-title" data-i18n="features_title">Everything a personal coach gives you. At 1/10th the price.</h2>
+  <p class="section-sub" data-i18n="features_sub">Built for serious self-coached athletes who want structured, adaptive training without paying €150–300/month for a human coach. Unlike a human trainer, SPACED is on 24/7 — adapting your plan the second you log a session, not the next time they have a free slot.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🧠</div>
+      <h3 data-i18n="feat1_title">AI-Generated Plans</h3>
+      <p data-i18n="feat1_desc">Tell SPACED your sport, goal, race date, and available days. The AI builds a complete periodized training plan in seconds — base, build, peak, and taper phases included.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔄</div>
+      <h3 data-i18n="feat2_title">Adaptive Programming</h3>
+      <p data-i18n="feat2_desc">Log each workout. The AI notices if you're consistently crushing or struggling sessions and automatically adjusts load, volume, and intensity the following week.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💬</div>
+      <h3 data-i18n="feat3_title">AI Coach Chat</h3>
+      <p data-i18n="feat3_desc">Ask your AI coach anything: "Why am I doing these intervals?", "I'm feeling tired this week, should I rest?", "What should I eat before a long run?" — instant, personalized answers. Available 24/7. No waiting for a reply.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <h3 data-i18n="feat4_title">Detailed Workouts</h3>
+      <p data-i18n="feat4_desc">Every session comes with exact exercises, sets, reps, rest periods, target heart rate zones, and pace targets. No guessing what to do in the gym or on the track.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3 data-i18n="feat5_title">Progress Tracking</h3>
+      <p data-i18n="feat5_desc">See your training load, consistency, and performance trends over time. Track PRs, weekly mileage, and completion rates — all visualized in one dashboard.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏁</div>
+      <h3 data-i18n="feat6_title">Race Countdowns</h3>
+      <p data-i18n="feat6_desc">Enter your race date and SPACED reverse-engineers your plan — ensuring you peak at exactly the right moment, not 2 weeks before or after your event.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SPORTS -->
+<section class="sports-section" id="sports">
+  <div class="sports-inner">
+    <div class="section-label" data-i18n="sports_label">Your sport</div>
+    <h2 class="section-title" data-i18n="sports_title">Built for competitive, goal-driven athletes</h2>
+    <p class="section-sub" style="margin-bottom:0" data-i18n="sports_sub">SPACED knows your sport's specific demands and builds plans accordingly — not generic gym programs.</p>
+    <div class="sports-grid">
+      <div class="sport-card">
+        <div class="sport-icon">🏅</div>
+        <h4 data-i18n="sport_hyrox_name">Hyrox</h4>
+        <p data-i18n="sport_hyrox_desc">Station-specific prep, ski erg, sleds, walls</p>
+        <span class="sport-badge" data-i18n="sport_hyrox_badge">🔥 Most popular</span>
+      </div>
+      <div class="sport-card">
+        <div class="sport-icon">🏃</div>
+        <h4 data-i18n="sport_running_name">Running</h4>
+        <p data-i18n="sport_running_desc">5K to marathon, periodized mileage builds</p>
+      </div>
+      <div class="sport-card">
+        <div class="sport-icon">🏋️</div>
+        <h4 data-i18n="sport_ff_name">Functional Fitness</h4>
+        <p data-i18n="sport_ff_desc">CrossFit-style, GPP, competition prep</p>
+      </div>
+      <div class="sport-card">
+        <div class="sport-icon">🚴</div>
+        <h4 data-i18n="sport_cycling_name">Cycling</h4>
+        <p data-i18n="sport_cycling_desc">Road, MTB, structured power zones</p>
+      </div>
+      <div class="sport-card">
+        <div class="sport-icon">🏊</div>
+        <h4 data-i18n="sport_tri_name">Triathlon</h4>
+        <p data-i18n="sport_tri_desc">Sprint to Ironman, multi-sport periodization</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section" id="how">
+  <div class="section-label" data-i18n="how_label">How it works</div>
+  <h2 class="section-title" data-i18n="how_title">From sign-up to first workout in 3 minutes</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h4 data-i18n="step1_title">Tell us about you</h4>
+      <p data-i18n="step1_desc">Choose your sport, set your goal, enter your race date and how many days you can train per week.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h4 data-i18n="step2_title">AI builds your plan</h4>
+      <p data-i18n="step2_desc">SPACED generates a full periodized program tailored to your profile — down to exact sets, reps, and paces.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h4 data-i18n="step3_title">Train & log</h4>
+      <p data-i18n="step3_desc">Follow each session, log how it went. The AI uses your feedback to adapt the following week's load.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <h4 data-i18n="step4_title">Race ready</h4>
+      <p data-i18n="step4_desc">Show up to your race having peaked at the right moment — not overtrained, not undertrained.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section" id="pricing">
+  <div class="pricing-inner">
+    <div style="text-align:center">
+      <div class="section-label" data-i18n="pricing_label">Pricing</div>
+      <h2 class="section-title" data-i18n="pricing_title">Simple, honest pricing</h2>
+      <p class="section-sub" style="margin:0 auto; text-align:center" data-i18n="pricing_sub">A human coach costs €150–300/month. Remote coaching with real trainers: €149/month. SPACED: €6.49 to start. Same outcome — consistency, structure, results — without the price tag.</p>
+    </div>
+    <div style="height:40px"></div>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="plan-name" data-i18n="plan_monthly_name">Monthly</div>
+        <div class="plan-price">
+          <span class="amount">€6.49</span><span class="per" data-i18n="plan_monthly_price_suffix"> first month</span>
+        </div>
+        <div class="plan-desc" data-i18n-html="plan_monthly_desc_html">Then <strong>€12.99/month</strong> — cancel anytime.</div>
+        <ul class="plan-features" style="margin-top:20px">
+          <li data-i18n="plan_monthly_feat1">AI-generated training plan</li>
+          <li data-i18n="plan_monthly_feat2">AI Coach chat (unlimited)</li>
+          <li data-i18n="plan_monthly_feat3">Adaptive weekly re-planning</li>
+          <li data-i18n="plan_monthly_feat4">Multiple sports / goals</li>
+          <li data-i18n="plan_monthly_feat5">Progress dashboard</li>
+          <li data-i18n="plan_monthly_feat6">Race countdown planning</li>
+        </ul>
+        <button class="plan-btn secondary" onclick="window.location.href='app/auth.html'" data-i18n="plan_monthly_btn">Start for €6.49 →</button>
+      </div>
+      <div class="pricing-card featured">
+        <div class="plan-name"><span data-i18n="plan_annual_name">Annual</span> <span style="background:var(--accent);color:var(--bg);font-size:10px;padding:2px 7px;border-radius:4px;margin-left:6px" data-i18n="plan_annual_badge">Best value</span></div>
+        <div class="plan-price">
+          <span class="amount">€99</span><span class="per" data-i18n="plan_annual_price_suffix">/year</span>
+        </div>
+        <div class="plan-desc" data-i18n-html="plan_annual_desc_html">Equivalent to <strong>€8.25/month</strong> — save 36% vs monthly.</div>
+        <ul class="plan-features" style="margin-top:20px">
+          <li data-i18n="plan_annual_feat1">Everything in Monthly</li>
+          <li data-i18n="plan_annual_feat2">Priority support</li>
+          <li data-i18n="plan_annual_feat3">Early access to new features</li>
+          <li data-i18n="plan_annual_feat4">Lock in today's price — forever</li>
+          <li data-i18n="plan_annual_feat5">One-time payment, no surprises</li>
+          <li data-i18n="plan_annual_feat6">Cancel anytime, prorated refund</li>
+        </ul>
+        <button class="plan-btn primary" onclick="window.location.href='app/auth.html'" data-i18n="plan_annual_btn">Get annual access →</button>
+      </div>
+    </div>
+    <p style="text-align:center;color:var(--muted);font-size:12px;margin-top:20px" data-i18n="pricing_note">Cancel anytime. No commitments. First monthly payment is €6.49 — 50% off.</p>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials">
+  <div class="section-label" data-i18n="testi_label">Early users</div>
+  <h2 class="section-title" data-i18n="testi_title">What athletes are saying</h2>
+  <div class="testi-grid">
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-text">"I've been self-coaching for Hyrox for 2 years, just guessing workouts from YouTube. SPACED gave me an actual periodized plan and I knocked 12 minutes off my time."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">🏋️</div>
+        <div>
+          <div class="testi-name">Mark V.</div>
+          <div class="testi-info">Hyrox Amsterdam finisher</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-text">"The AI coach chat is unbelievably useful. I asked about my pacing strategy for the ski erg and got a better answer than from posts I'd read for months."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">🏃</div>
+        <div>
+          <div class="testi-name">Lisa K.</div>
+          <div class="testi-info">Running — half marathon</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-text">"At €12.99/month, this is a no-brainer. A good PT costs €80/session. SPACED gives me a complete training plan, adapts when I tell it I'm tired, and answers questions 24/7."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">✦</div>
+        <div>
+          <div class="testi-name">Tom B.</div>
+          <div class="testi-info">Functional fitness athlete</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2 data-i18n-html="cta_title_html">Ready to train <em>smarter?</em></h2>
+  <p data-i18n="cta_sub">Human trainers cost €150–300/month and respond when they can. SPACED adapts in real time, answers at midnight, and never misses a session — for €12.99/month.</p>
+  <a class="btn-primary" href="app/auth.html" style="font-size:16px;padding:16px 40px" data-i18n="cta_btn">Start for €6.49 →</a>
+  <p class="cta-note" data-i18n="cta_note">50% off your first month · €12.99/month after · cancel anytime</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width:100%;height:100%;display:block;"><!-- top arm --><polygon points="50,4 38,38 50,50" fill="#c2e0ff"/><polygon points="50,4 50,50 62,38" fill="#2866d4"/><polygon points="50,4 38,38 43,22" fill="#e8f5ff"/><polygon points="50,4 62,38 57,22" fill="#1044a8"/><!-- right arm --><polygon points="96,50 62,38 50,50" fill="#7cbaf2"/><polygon points="96,50 50,50 62,62" fill="#1044a8"/><polygon points="96,50 62,38 78,43" fill="#aed4ff"/><polygon points="96,50 62,62 78,57" fill="#092e90"/><!-- bottom arm --><polygon points="50,96 62,62 50,50" fill="#c2e0ff"/><polygon points="50,96 50,50 38,62" fill="#2866d4"/><polygon points="50,96 62,62 57,78" fill="#e8f5ff"/><polygon points="50,96 38,62 43,78" fill="#1044a8"/><!-- left arm --><polygon points="4,50 38,62 50,50" fill="#7cbaf2"/><polygon points="4,50 50,50 38,38" fill="#1044a8"/><polygon points="4,50 38,62 22,57" fill="#aed4ff"/><polygon points="4,50 38,38 22,43" fill="#092e90"/><!-- center glow --><circle cx="50" cy="50" r="10" fill="white" opacity="0.88"/></svg></div>
+      SPACED
+    </div>
+    <div class="footer-links">
+      <a href="legal/about.html" data-i18n="footer_about">About us</a>
+      <a href="legal/privacy.html" data-i18n="footer_privacy">Privacy</a>
+      <a href="legal/terms.html" data-i18n="footer_terms">Terms</a>
+      <a href="mailto:hello@spaced.app" data-i18n="footer_contact">Contact</a>
+    </div>
+  </div>
+  <p class="footer-copy" data-i18n="footer_copy">© 2026 SPACED — Joepiter B.V. · Built with ✦ for athletes who can't afford to guess.</p>
+</footer>
+
+<script>
+
+if (window.SpacedI18n) document.getElementById('lang-select').value = SpacedI18n.getLang();
+
+// If already logged in, point the nav at the dashboard instead of sign-in/sign-up —
+// the homepage is the entry point for logged-out visitors, not a wall you have to
+// click through once you already have an account.
+(async function checkAuthNav() {
+  try {
+    if (!window.supabase || typeof SUPABASE_URL === 'undefined') return;
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      const loginLink = document.getElementById('nav-login-link');
+      const ctaLink = document.getElementById('nav-cta-link');
+      // Swap the data-i18n key (not just the text) so a translation pass that runs
+      // before or after this check still renders the right label either way.
+      if (loginLink) { loginLink.setAttribute('data-i18n', 'nav_dashboard'); loginLink.href = 'app/dashboard.html'; }
+      if (ctaLink) { ctaLink.setAttribute('data-i18n', 'nav_cta_dashboard'); ctaLink.href = 'app/dashboard.html'; }
+      if (window.SpacedI18n) SpacedI18n.applyTranslations();
+    }
+  } catch (e) {}
+})();
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+  });
+});
+
+// ── Iris v2: Star field canvas ──────────────────────────────────────────────
+(function () {
+  const c = document.createElement('canvas');
+  c.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;';
+  document.body.insertBefore(c, document.body.firstChild);
+  const x = c.getContext('2d');
+  let stars = [], W, H, t = 0;
+
+  function resize() {
+    W = c.width = innerWidth;
+    H = c.height = innerHeight;
+    stars = Array.from({ length: 170 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 0.9 + 0.15,
+      a: Math.random() * 0.5 + 0.07,
+      s: Math.random() * 0.011 + 0.004,
+      p: Math.random() * Math.PI * 2
+    }));
+  }
+
+  function frame() {
+    x.clearRect(0, 0, W, H);
+    t++;
+    for (const s of stars) {
+      const alpha = s.a * (0.35 + 0.65 * Math.sin(t * s.s + s.p));
+      x.beginPath();
+      x.arc(s.x, s.y, s.r, 0, 6.2832);
+      x.fillStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
+      x.fill();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  addEventListener('resize', resize);
+  resize(); frame();
+})();
+</script>
+
+<!-- COOKIE CONSENT BANNER -->
+<div id="cookieBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#0E1020;border-top:1px solid #252b3b;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:9999;flex-wrap:wrap;">
+  <p style="color:#c8cdd8;font-size:13px;margin:0;flex:1;min-width:200px">
+    <span data-i18n="cookie_text_html">We use cookies to keep you logged in and improve SPACED. No tracking cookies without your consent.</span>
+    <a href="legal/privacy.html" style="color:#1A6EFF;margin-left:4px" data-i18n="footer_privacy">Privacy Policy</a>
+  </p>
+  <div style="display:flex;gap:10px;flex-shrink:0">
+    <button onclick="cookieDecline()" style="background:transparent;border:1px solid #252b3b;color:#8892a4;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer" data-i18n="cookie_decline">Decline analytics</button>
+    <button onclick="cookieAccept()" style="background:#1A6EFF;border:none;color:#0A0C14;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer" data-i18n="cookie_accept">Accept all</button>
+  </div>
+</div>
+
+<script>
+// Cookie consent
+(function() {
+  const consent = localStorage.getItem('spaced_cookie_consent');
+  if (!consent) document.getElementById('cookieBanner').style.display = 'flex';
+})();
+function cookieAccept() {
+  localStorage.setItem('spaced_cookie_consent', 'all');
+  document.getElementById('cookieBanner').style.display = 'none';
+}
+function cookieDecline() {
+  localStorage.setItem('spaced_cookie_consent', 'necessary');
+  document.getElementById('cookieBanner').style.display = 'none';
+}
+
+// Register PWA service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
