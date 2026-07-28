@@ -140,7 +140,7 @@ You have full knowledge of: periodization, strength training, endurance physiolo
     ];
 
     let resp = await anthropic.messages.create({
-      model: 'claude-sonnet-5',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 3000,
       system: systemPrompt,
       messages,
@@ -173,7 +173,7 @@ You have full knowledge of: periodization, strength training, endurance physiolo
       messages.push({ role: 'user', content: toolResults });
 
       resp = await anthropic.messages.create({
-        model: 'claude-sonnet-5',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 3000,
         system: systemPrompt,
         messages,
